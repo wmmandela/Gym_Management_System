@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+
+{% block title %}GetFit - Home{% endblock %}
+
+{% block content %}
+<section class="hero-search-section">
+    <div class="hero-search-content">
+        <h1 class="hero-title">Transform Your Body,<br>Transform Your Life</h1>
+
+        <div class="search-container">
+            <div class="search-input-group">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" placeholder="Search for gyms, classes, or trainers...">
+            </div>
+        </div>
+
+        <div class="quick-filters">
+            <div class="filter-chip active">All</div>
+            <div class="filter-chip">Gyms</div>
+            <div class="filter-chip">Classes</div>
+            <div class="filter-chip">Trainers</div>
+            <div class="filter-chip">Equipment</div>
+        </div>
+    </div>
+</section>
+
+<section class="categories-section">
+    <div class="container">
+        <h2 class="section-title">Browse Categories</h2>
+        <div class="categories-grid">
+            <a href="#" class="category-card">
+                <div class="category-icon">🏋️</div>
+                <h3>Weight Training</h3>
+                <p>24 Gyms</p>
+            </a>
+            <a href="#" class="category-card">
+                <div class="category-icon">🧘</div>
+                <h3>Yoga</h3>
+                <p>18 Classes</p>
+            </a>
+            <a href="#" class="category-card">
+                <div class="category-icon">🏃</div>
+                <h3>Cardio</h3>
+                <p>32 Gyms</p>
+            </a>
+            <a href="#" class="category-card">
+                <div class="category-icon">🚴</div>
+                <h3>Spinning</h3>
+                <p>12 Classes</p>
+            </a>
+            <a href="#" class="category-card">
+                <div class="category-icon">🥊</div>
+                <h3>CrossFit</h3>
+                <p>8 Gyms</p>
+            </a>
+            <a href="#" class="category-card">
+                <div class="category-icon">🏊</div>
+                <h3>Swimming</h3>
+                <p>6 Gyms</p>
+            </a>
+            <a href="#" class="category-card">
+                <div class="category-icon">🥗</div>
+                <h3>Nutrition</h3>
+                <p>15 Plans</p>
+            </a>
+            <a href="#" class="category-card">
+                <div class="category-icon">👨‍🏫</div>
+                <h3>Personal Training</h3>
+                <p>45 Trainers</p>
+            </a>
+        </div>
+    </div>
+</section>
+
+<section class="featured-section">
+    <div class="container">
+        <h2 class="section-title">Featured Gyms</h2>
+        <div class="featured-grid">
+            <div class="glassy-card featured-card">
+                <div class="featured-image">
+                    <div class="image-placeholder">🏋️</div>
+                    <span class="discount-badge">20% OFF</span>
+                </div>
+                <div class="featured-body">
+                    <h4>FitLife Premium Gym</h4>
+                    <p>Downtown • Open 24/7</p>
+                    <p class="price-text">From $49/month</p>
+                    <a href="#" class="btn-primary">View Details</a>
+                </div>
+            </div>
+            <div class="glassy-card featured-card">
+                <div class="featured-image">
+                    <div class="image-placeholder">💪</div>
+                    <span class="discount-badge">15% OFF</span>
+                </div>
+                <div class="featured-body">
+                    <h4>PowerHouse Fitness</h4>
+                    <p>Midtown • Pool Available</p>
+                    <p class="price-text">From $39/month</p>
+                    <a href="#" class="btn-primary">View Details</a>
+                </div>
+            </div>
+            <div class="glassy-card featured-card">
+                <div class="featured-image">
+                    <div class="image-placeholder">🏃</div>
+                    <span class="discount-badge">25% OFF</span>
+                </div>
+                <div class="featured-body">
+                    <h4>FlexZone Yoga Studio</h4>
+                    <p>Uptown • Premium Classes</p>
+                    <p class="price-text">From $59/month</p>
+                    <a href="#" class="btn-primary">View Details</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="how-it-works">
+    <div class="container">
+        <h2 class="section-title">How It Works</h2>
+        <div class="steps-grid">
+            <div class="glassy-card step-card">
+                <div class="step-number">1</div>
+                <h4>Search</h4>
+                <p>Find the perfect gym, class, or trainer near you using our powerful search tools.</p>
+            </div>
+            <div class="glassy-card step-card">
+                <div class="step-number">2</div>
+                <h4>Compare</h4>
+                <p>Compare prices, amenities, reviews, and schedules to make the best choice.</p>
+            </div>
+            <div class="glassy-card step-card">
+                <div class="step-number">3</div>
+                <h4>Book</h4>
+                <p>Book your membership or class online instantly with flexible payment options.</p>
+            </div>
+            <div class="glassy-card step-card">
+                <div class="step-number">4</div>
+                <h4>Train</h4>
+                <p>Start your fitness journey with access to premium facilities and expert trainers.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="membership-section">
+    <div class="container">
+        <h2 class="section-title">Membership Plans</h2>
+        <div class="pricing-grid">
+            <div class="glassy-card pricing-card">
+                <h3>Basic</h3>
+                <div class="price">$29<span>/month</span></div>
+                <ul class="features-list">
+                    <li>✅ Gym Access</li>
+                    <li>✅ Free Locker</li>
+                    <li>❌ Group Classes</li>
+                    <li>❌ Personal Trainer</li>
+                    <li>❌ Sauna Access</li>
+                </ul>
+                <a href="#" class="btn-secondary">Choose Plan</a>
+            </div>
+            <div class="glassy-card pricing-card featured">
+                <div class="popular-tag">Most Popular</div>
+                <h3>Pro</h3>
+                <div class="price">$49<span>/month</span></div>
+                <ul class="features-list">
+                    <li>✅ 24/7 Gym Access</li>
+                    <li>✅ Group Classes</li>
+                    <li>✅ Free Locker</li>
+                    <li>❌ Personal Trainer</li>
+                    <li>❌ Sauna Access</li>
+                </ul>
+                <a href="#" class="btn-primary">Choose Plan</a>
+            </div>
+            <div class="glassy-card pricing-card">
+                <h3>Elite</h3>
+                <div class="price">$89<span>/month</span></div>
+                <ul class="features-list">
+                    <li>✅ 24/7 Gym Access</li>
+                    <li>✅ Unlimited Classes</li>
+                    <li>✅ Personal Trainer</li>
+                    <li>✅ Sauna & Spa</li>
+                    <li>✅ Nutrition Plan</li>
+                </ul>
+                <a href="#" class="btn-secondary">Choose Plan</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="stats-section">
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-number">500+</div>
+                <div class="stat-label">Members</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">20+</div>
+                <div class="stat-label">Trainers</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">50+</div>
+                <div class="stat-label">Classes/Week</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">10+</div>
+                <div class="stat-label">Years Experience</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="contact-section">
+    <div class="container">
+        <h2 class="section-title">Get In Touch</h2>
+        <div class="contact-grid">
+            <div class="contact-info">
+                <div class="contact-item">
+                    <span class="contact-icon">📍</span>
+                    <div>
+                        <h4>Address</h4>
+                        <p>123 Fitness Street, New York, NY 10001</p>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon">📞</span>
+                    <div>
+                        <h4>Phone</h4>
+                        <p>+1 (555) 123-4567</p>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon">✉️</span>
+                    <div>
+                        <h4>Email</h4>
+                        <p>info@getfitgym.com</p>
+                    </div>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon">🕐</span>
+                    <div>
+                        <h4>Hours</h4>
+                        <p>Open 24/7 for Members</p>
+                    </div>
+                </div>
+            </div>
+            <form class="contact-form">
+                <input type="text" placeholder="Your Name" required>
+                <input type="email" placeholder="Your Email" required>
+                <input type="text" placeholder="Subject" required>
+                <textarea placeholder="Your Message" rows="5" required></textarea>
+                <button type="submit" class="btn-primary">Send Message</button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

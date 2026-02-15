@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}GetFit - Sign Up{% endblock %}
+
+{% block content %}
+<section class="auth-page">
+    <div class="container">
+        <div class="glassy-card auth-card">
+            <h2>Create Your Account</h2>
+            <p>Sign up and start building your personalized fitness plan.</p>
+            <form method="post" class="form-grid">
+                {% csrf_token %}
+                <div class="form-field">
+                    <label for="name">Full Name</label>
+                    <input id="name" name="name" type="text" placeholder="Your full name" required>
+                </div>
+                <div class="form-field">
+                    <label for="email">Email</label>
+                    <input id="email" name="email" type="email" placeholder="you@example.com" required>
+                </div>
+                <div class="form-field">
+                    <label for="phone">Phone</label>
+                    <input id="phone" name="phone" type="tel" placeholder="+254 700 123 456" required>
+                </div>
+                <div class="form-field">
+                    <label for="password">Password</label>
+                    <input id="password" name="password" type="password" placeholder="Create a password" required>
+                </div>
+                <div class="form-field">
+                    <label for="confirm_password">Confirm Password</label>
+                    <input id="confirm_password" name="confirm_password" type="password" placeholder="Confirm password" required>
+                </div>
+                <div class="form-actions">
+                    <button class="btn-primary" type="submit">Create Account</button>
+                </div>
+            </form>
+            <div class="auth-helper">
+                Already have an account? <a href="{% url 'signin' %}">Sign in</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

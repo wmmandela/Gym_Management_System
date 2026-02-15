@@ -1,0 +1,401 @@
+{% extends 'base.html' %}
+
+{% block title %}GetFit - Onboarding{% endblock %}
+
+{% block content %}
+<section class="onboarding-shell">
+    <div class="container">
+        <div class="onboarding-layout">
+            <aside class="glassy-card onboarding-side-panel">
+                <p class="onboarding-side-kicker">SMART FLOW</p>
+                <h2>Build Your Personalized Plan</h2>
+                <p>Answer each question once. We use your responses to tailor coaching, workouts, and dashboard recommendations.</p>
+
+                <div class="onboarding-step-counter">
+                    <span id="stepCurrent">1</span>
+                    <span>/</span>
+                    <span id="stepTotal">24</span>
+                </div>
+                <div class="onboarding-progress-track">
+                    <div class="onboarding-progress-fill" id="onboardingProgressFill"></div>
+                </div>
+
+                <ul class="status-list onboarding-side-list">
+                    <li>Goal-driven workout generation</li>
+                    <li>Home/Gym/Hybrid adaptation</li>
+                    <li>Trainer matching when selected</li>
+                    <li>Progress and habit tracking setup</li>
+                </ul>
+            </aside>
+
+            <div class="glassy-card auth-card onboarding-card onboarding-main-card">
+                <h2>Fitness Onboarding</h2>
+                <p>One focused question at a time.</p>
+
+                <form method="post" id="onboardingForm">
+                    {% csrf_token %}
+
+                    <div class="onboarding-step active" data-step="1">
+                        <div class="step-section">Section 1: Basics</div>
+                        <div class="form-field">
+                            <label for="age">Age</label>
+                            <input id="age" name="age" type="number" min="13" max="80" required>
+                            <small class="hint">Age must be between 13 and 80.</small>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="2">
+                        <div class="step-section">Section 1: Basics</div>
+                        <div class="form-field">
+                            <label>Gender (Optional)</label>
+                            <div class="option-grid">
+                                <label><input type="radio" name="gender" value="male"> Male</label>
+                                <label><input type="radio" name="gender" value="female"> Female</label>
+                                <label><input type="radio" name="gender" value="prefer_not"> Prefer not to say</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="3">
+                        <div class="step-section">Section 1: Basics</div>
+                        <div class="form-field">
+                            <label for="height_cm">Height (cm)</label>
+                            <input id="height_cm" name="height_cm" type="number" min="100" max="230" required>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="4">
+                        <div class="step-section">Section 1: Basics</div>
+                        <div class="form-field">
+                            <label for="weight_kg">Current Weight (kg)</label>
+                            <input id="weight_kg" name="weight_kg" type="number" min="30" max="250" required>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="5">
+                        <div class="step-section">Section 2: Fitness Background</div>
+                        <div class="form-field">
+                            <label for="fitness_level">Current Fitness Level</label>
+                            <select id="fitness_level" name="fitness_level" required>
+                                <option value="">Select one</option>
+                                <option value="beginner">Beginner (new to training)</option>
+                                <option value="intermediate">Intermediate (train occasionally)</option>
+                                <option value="advanced">Advanced (train consistently)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="6">
+                        <div class="step-section">Section 2: Fitness Background</div>
+                        <div class="form-field">
+                            <label for="training_experience">Previous Training Experience</label>
+                            <select id="training_experience" name="training_experience" required>
+                                <option value="">Select one</option>
+                                <option value="none">None</option>
+                                <option value="home">Home workouts</option>
+                                <option value="gym">Gym workouts</option>
+                                <option value="personal_training">Personal training</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="7">
+                        <div class="step-section">Section 2: Fitness Background</div>
+                        <div class="form-field">
+                            <label for="health_considerations">Health Considerations (Optional)</label>
+                            <textarea id="health_considerations" name="health_considerations" rows="4" placeholder="Injuries, medical conditions, or none"></textarea>
+                            <small class="hint">Not medical advice.</small>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="8">
+                        <div class="step-section">Section 3: Goals & Motivation</div>
+                        <div class="form-field">
+                            <label for="primary_goal">Primary Fitness Goal</label>
+                            <select id="primary_goal" name="primary_goal" required>
+                                <option value="">Choose one</option>
+                                <option value="lose_weight">Lose weight</option>
+                                <option value="build_muscle">Build muscle</option>
+                                <option value="improve_endurance">Improve endurance</option>
+                                <option value="increase_flexibility">Increase flexibility</option>
+                                <option value="general_fitness">General fitness</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="9">
+                        <div class="step-section">Section 3: Goals & Motivation</div>
+                        <div class="form-field">
+                            <label>Secondary Goals (Optional)</label>
+                            <div class="option-grid">
+                                <label><input type="checkbox" name="secondary_goals" value="core_strength"> Core strength</label>
+                                <label><input type="checkbox" name="secondary_goals" value="mobility"> Mobility</label>
+                                <label><input type="checkbox" name="secondary_goals" value="sports_performance"> Sports performance</label>
+                                <label><input type="checkbox" name="secondary_goals" value="stress_reduction"> Stress reduction</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="10">
+                        <div class="step-section">Section 3: Goals & Motivation</div>
+                        <div class="form-field">
+                            <label for="target_weight_kg">Target Weight (kg) (Optional)</label>
+                            <input id="target_weight_kg" name="target_weight_kg" type="number" min="30" max="250">
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="11">
+                        <div class="step-section">Section 3: Goals & Motivation</div>
+                        <div class="form-field">
+                            <label for="goal_timeframe">Timeframe for Goal</label>
+                            <select id="goal_timeframe" name="goal_timeframe" required>
+                                <option value="">Select one</option>
+                                <option value="1_3_months">1–3 months</option>
+                                <option value="3_6_months">3–6 months</option>
+                                <option value="6_plus">6+ months</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="12">
+                        <div class="step-section">Section 4: Training Preferences</div>
+                        <div class="form-field">
+                            <label for="training_type">Preferred Training Type</label>
+                            <select id="training_type" name="training_type" required>
+                                <option value="">Select one</option>
+                                <option value="home">Home training</option>
+                                <option value="gym">Gym training</option>
+                                <option value="hybrid">Hybrid (both)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="13">
+                        <div class="step-section">Section 4: Training Preferences</div>
+                        <div class="form-field">
+                            <label for="workout_frequency">Workout Frequency (per week)</label>
+                            <select id="workout_frequency" name="workout_frequency" required>
+                                <option value="">Select one</option>
+                                <option value="2_3_days">2–3 days</option>
+                                <option value="3_4_days">3–4 days</option>
+                                <option value="5_plus_days">5+ days</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="14">
+                        <div class="step-section">Section 4: Training Preferences</div>
+                        <div class="form-field">
+                            <label for="workout_duration">Preferred Workout Duration</label>
+                            <select id="workout_duration" name="workout_duration" required>
+                                <option value="">Select one</option>
+                                <option value="20_30">20–30 minutes</option>
+                                <option value="30_45">30–45 minutes</option>
+                                <option value="45_60">45–60 minutes</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="15">
+                        <div class="step-section">Section 4: Training Preferences</div>
+                        <div class="form-field">
+                            <label for="training_time">Preferred Training Time</label>
+                            <select id="training_time" name="training_time" required>
+                                <option value="">Select one</option>
+                                <option value="morning">Morning</option>
+                                <option value="afternoon">Afternoon</option>
+                                <option value="evening">Evening</option>
+                                <option value="flexible">Flexible</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="16">
+                        <div class="step-section">Section 5: Equipment & Access</div>
+                        <div class="form-field">
+                            <label for="equipment_home">Available Equipment (Home)</label>
+                            <select id="equipment_home" name="equipment_home" required>
+                                <option value="">Select one</option>
+                                <option value="none">None</option>
+                                <option value="dumbbells">Dumbbells</option>
+                                <option value="bands">Resistance bands</option>
+                                <option value="full_home_gym">Full home gym</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="17">
+                        <div class="step-section">Section 5: Equipment & Access</div>
+                        <div class="form-field">
+                            <label for="gym_access">GetFit Access</label>
+                            <select id="gym_access" name="gym_access" required>
+                                <option value="">Select one</option>
+                                <option value="no_access">No GetFit access yet</option>
+                                <option value="commercial">GetFit Standard access</option>
+                                <option value="private">GetFit Premium access</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="18">
+                        <div class="step-section">Section 6: Coaching & Support</div>
+                        <div class="form-field">
+                            <label for="program_type">Preferred Program Path</label>
+                            <select id="program_type" name="program_type" required>
+                                <option value="">Select one</option>
+                                <option value="personal_trainer">Personal trainer</option>
+                                <option value="individual">Individual</option>
+                                <option value="hybrid">Hybrid</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="19">
+                        <div class="step-section">Section 6: Coaching & Support</div>
+                        <div class="form-field">
+                            <label for="coaching_style">Preferred Coaching Style</label>
+                            <select id="coaching_style" name="coaching_style" required>
+                                <option value="">Select one</option>
+                                <option value="strict">Strict & structured</option>
+                                <option value="supportive">Supportive & flexible</option>
+                                <option value="mixed">Mixed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="20">
+                        <div class="step-section">Section 6: Coaching & Support</div>
+                        <div class="form-field">
+                            <label for="instructor_preference">Instructor Preference (Optional)</label>
+                            <select id="instructor_preference" name="instructor_preference">
+                                <option value="">No selection</option>
+                                <option value="male">Male trainer</option>
+                                <option value="female">Female trainer</option>
+                                <option value="no_preference">No preference</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="21">
+                        <div class="step-section">Section 7: Tracking & Commitment</div>
+                        <div class="form-field">
+                            <label>Metrics You Want to Track</label>
+                            <div class="option-grid">
+                                <label><input type="checkbox" name="tracking_metrics" value="weight"> Weight</label>
+                                <label><input type="checkbox" name="tracking_metrics" value="measurements"> Body measurements</label>
+                                <label><input type="checkbox" name="tracking_metrics" value="workout_completion"> Workout completion</label>
+                                <label><input type="checkbox" name="tracking_metrics" value="strength_progression"> Strength progression</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="22">
+                        <div class="step-section">Section 7: Tracking & Commitment</div>
+                        <div class="form-field">
+                            <label for="progress_check_frequency">Progress Check Frequency</label>
+                            <select id="progress_check_frequency" name="progress_check_frequency" required>
+                                <option value="">Select one</option>
+                                <option value="weekly">Weekly</option>
+                                <option value="bi_weekly">Bi-weekly</option>
+                                <option value="monthly">Monthly</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="23">
+                        <div class="step-section">Section 7: Tracking & Commitment</div>
+                        <div class="form-field">
+                            <label for="commitment_level">Commitment Level</label>
+                            <select id="commitment_level" name="commitment_level" required>
+                                <option value="">Select one</option>
+                                <option value="casual">Casual</option>
+                                <option value="serious">Serious</option>
+                                <option value="very_serious">Very serious</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="onboarding-step" data-step="24">
+                        <div class="step-section">Section 8: Final Confirmation</div>
+                        <div class="form-field">
+                            <label>
+                                <input type="checkbox" name="consent_acknowledged" required>
+                                I understand this platform provides fitness guidance and not medical advice.
+                            </label>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn-primary" type="submit">Create My Fitness Plan</button>
+                        </div>
+                    </div>
+
+                    <div class="wizard-actions">
+                        <button type="button" class="btn-secondary" id="prevBtn">Back</button>
+                        <button type="button" class="btn-primary" id="nextBtn">Next</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    const steps = Array.from(document.querySelectorAll('.onboarding-step'));
+    const nextBtn = document.getElementById('nextBtn');
+    const prevBtn = document.getElementById('prevBtn');
+    const stepCurrent = document.getElementById('stepCurrent');
+    const stepTotal = document.getElementById('stepTotal');
+    const progressFill = document.getElementById('onboardingProgressFill');
+    let currentStep = 0;
+
+    function updateStep() {
+        steps.forEach((step, index) => {
+            step.classList.toggle('active', index === currentStep);
+        });
+
+        prevBtn.style.display = currentStep === 0 ? 'none' : 'inline-flex';
+        nextBtn.style.display = currentStep === steps.length - 1 ? 'none' : 'inline-flex';
+
+        if (stepCurrent) {
+            stepCurrent.textContent = String(currentStep + 1);
+        }
+        if (stepTotal) {
+            stepTotal.textContent = String(steps.length);
+        }
+        if (progressFill) {
+            const progress = ((currentStep + 1) / steps.length) * 100;
+            progressFill.style.width = `${progress}%`;
+        }
+    }
+
+    function validateCurrentStep() {
+        const current = steps[currentStep];
+        const requiredFields = current.querySelectorAll('input[required], select[required], textarea[required]');
+        for (const field of requiredFields) {
+            if (!field.checkValidity()) {
+                field.reportValidity();
+                return false;
+            }
+        }
+        return true;
+    }
+
+    nextBtn.addEventListener('click', () => {
+        if (!validateCurrentStep()) {
+            return;
+        }
+        if (currentStep < steps.length - 1) {
+            currentStep += 1;
+            updateStep();
+        }
+    });
+
+    prevBtn.addEventListener('click', () => {
+        if (currentStep > 0) {
+            currentStep -= 1;
+            updateStep();
+        }
+    });
+
+    updateStep();
+</script>
+{% endblock %}

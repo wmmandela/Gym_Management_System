@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+
+{% block title %}GetFit - Timetable Planner{% endblock %}
+
+{% block content %}
+<section class="dashboard-shell">
+    <div class="container">
+        <div class="dashboard-topline">
+            <h1>Weekly Timetable Planner</h1>
+            <p>Set your workout, coaching mode, and location for each day.</p>
+        </div>
+
+        <div class="glassy-card home-actions-card">
+            <form method="post" class="form-grid">
+                {% csrf_token %}
+                <div class="dashboard-grid" style="grid-template-columns: 1fr; gap: 12px;">
+                    {% for day in schedule %}
+                    <div class="glassy-card status-card compact-card">
+                        <input type="hidden" name="day_{{ forloop.counter0 }}_day" value="{{ day.day }}">
+                        <h3>{{ day.day }}</h3>
+                        <div class="dashboard-grid" style="grid-template-columns: 1.4fr 1fr 1fr; gap: 10px;">
+                            <div class="form-field">
+                                <label for="workout_{{ forloop.counter0 }}">Workout</label>
+                                <input id="workout_{{ forloop.counter0 }}" type="text" name="day_{{ forloop.counter0 }}_workout" value="{{ day.workout }}" required>
+                            </div>
+                            <div class="form-field">
+                                <label for="coaching_{{ forloop.counter0 }}">Mode</label>
+                                <select id="coaching_{{ forloop.counter0 }}" name="day_{{ forloop.counter0 }}_coaching" required>
+                                    <option value="Coach-led" {% if day.coaching == 'Coach-led' %}selected{% endif %}>Coach-led</option>
+                                    <option value="Self-guided" {% if day.coaching == 'Self-guided' %}selected{% endif %}>Self-guided</option>
+                                    <option value="Recovery" {% if day.coaching == 'Recovery' %}selected{% endif %}>Recovery</option>
+                                </select>
+                            </div>
+                            <div class="form-field">
+                                <label for="location_{{ forloop.counter0 }}">Location</label>
+                                <select id="location_{{ forloop.counter0 }}" name="day_{{ forloop.counter0 }}_location" required>
+                                    <option value="Home" {% if day.location == 'Home' %}selected{% endif %}>Home</option>
+                                    <option value="Gym" {% if day.location == 'Gym' %}selected{% endif %}>Gym</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="form-actions" style="margin-top: 10px;">
+                    <button class="btn-primary" type="submit">Save Timetable</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,523 @@
+{% extends 'base.html' %}
+
+{% block title %}GetFit - Dashboard{% endblock %}
+
+{% block content %}
+<section class="dashboard-shell">
+    <div class="container">
+        <div class="dashboard-page-frame" id="dashboardPageFrame">
+        <aside class="glassy-card trainer-nav-panel dashboard-side-nav" id="dashboardSideNav">
+            <p class="trainer-nav-title">Menu</p>
+            <a href="{% url 'home' %}" class="trainer-nav-item">
+                <span class="trainer-nav-icon">⌂</span><span class="trainer-nav-label">Home</span>
+            </a>
+            <a href="{% url 'dashboard' %}" class="trainer-nav-item">
+                <span class="trainer-nav-icon">🏠</span><span class="trainer-nav-label">Dashboard</span>
+            </a>
+            <a href="#overview-section" class="trainer-nav-item">
+                <span class="trainer-nav-icon">🧭</span><span class="trainer-nav-label">Overview</span>
+            </a>
+            <a href="#workout-arrangement-section" class="trainer-nav-item">
+                <span class="trainer-nav-icon">🏋️</span><span class="trainer-nav-label">Workout Plan</span>
+            </a>
+            <a href="#recent-details-section" class="trainer-nav-item">
+                <span class="trainer-nav-icon">📋</span><span class="trainer-nav-label">Plan Details</span>
+            </a>
+            <a href="{% url 'timetable_planner' %}" class="trainer-nav-item">
+                <span class="trainer-nav-icon">🗓️</span><span class="trainer-nav-label">Change Timetable</span>
+            </a>
+            <a href="{% url 'onboarding' %}" class="trainer-nav-item">
+                <span class="trainer-nav-icon">✏️</span><span class="trainer-nav-label">Update Onboarding</span>
+            </a>
+            {% if dashboard_variant == 'personal_trainer' %}
+            <a href="{% url 'trainer_page' %}" class="trainer-nav-item">
+                <span class="trainer-nav-icon">🧑‍🏫</span><span class="trainer-nav-label">Trainer Page</span>
+            </a>
+            {% endif %}
+            <a href="{% url 'logout' %}" class="trainer-nav-item trainer-nav-item-danger">
+                <span class="trainer-nav-icon">↩</span><span class="trainer-nav-label">Logout</span>
+            </a>
+        </aside>
+        <button type="button" class="dashboard-menu-handle" id="dashboardNavToggle" aria-label="Collapse menu">
+            <span id="dashboardNavArrow">◀</span>
+        </button>
+
+        <div class="dashboard-main-content">
+        <div class="dashboard-topline reveal" id="overview-section" style="--delay: 0.04s;">
+            <h1>Your Daily Fitness Focus</h1>
+            <p>Clear plan, strong execution, steady progress.</p>
+        </div>
+
+        <div class="glassy-card dashboard-hero-slab reveal" style="--delay: 0.08s;">
+            <div>
+                <p class="dashboard-kicker">DASHBOARD OVERVIEW</p>
+                <h2>Welcome{% if user_name %}, {{ user_name }}{% endif %}</h2>
+                {% if profile and profile.recommendations %}
+                    <p class="dashboard-hero-copy">{{ profile.recommendations }}</p>
+                {% else %}
+                    <p class="dashboard-hero-copy">Complete onboarding to unlock your personalized plan.</p>
+                {% endif %}
+            </div>
+            <div class="dashboard-hero-actions">
+                <a class="btn-primary" href="{% url 'onboarding' %}">Update Onboarding</a>
+            </div>
+        </div>
+
+        <div class="dashboard-metric-grid reveal" style="--delay: 0.12s;">
+            <div class="glassy-card status-card compact-card hover-lift">
+                <h3>Mode</h3>
+                {% if dashboard_variant == 'personal_trainer' %}
+                    <p>Personal Trainer</p>
+                {% elif dashboard_variant == 'individual' %}
+                    <p>Individual</p>
+                {% elif dashboard_variant == 'hybrid' %}
+                    <p>Hybrid</p>
+                {% else %}
+                    <p>Not set</p>
+                {% endif %}
+            </div>
+            <div class="glassy-card status-card compact-card hover-lift">
+                <h3>Focus</h3>
+                {% if exercise_plan.focus_label %}
+                    <p>{{ exercise_plan.focus_label }}</p>
+                {% else %}
+                    <p>Set after onboarding</p>
+                {% endif %}
+            </div>
+            <div class="glassy-card status-card compact-card hover-lift">
+                <h3>Recent Plans</h3>
+                <p>{% if plans %}{{ plans|length }} active{% else %}None yet{% endif %}</p>
+            </div>
+            <div class="glassy-card status-card compact-card hover-lift">
+                {% if dashboard_variant == 'personal_trainer' and profile.assigned_trainer %}
+                    <h3>Trainer</h3>
+                    <p>{{ profile.assigned_trainer }} at {{ profile.assigned_trainer_time }}</p>
+                {% else %}
+                    <h3>Progress</h3>
+                    <p data-progress-value="summary_display">{{ progress_metrics.workouts_total }} completed • {{ progress_metrics.sessions_started_total }} started</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if dashboard_variant == 'personal_trainer' %}
+        <section id="trainer-program-section">
+            <h2 class="section-title">Trainer Program Overview</h2>
+            {% if variant_panel %}
+            <div class="home-individual-stack">
+                <div class="glassy-card home-control-hero reveal" style="--delay: 0.16s;">
+                    <div>
+                        <h3>{{ variant_panel.hero_title }}</h3>
+                        <p>Goal: {{ variant_panel.goal }}</p>
+                        <p>Level: {{ variant_panel.level }}</p>
+                        <p>Streak: 🔥 {{ variant_panel.streak_days }} Days</p>
+                        <div class="home-hero-meta">
+                            <span class="home-duration-badge">🕒 {{ variant_panel.duration }}</span>
+                        </div>
+                        <div class="home-week-progress">
+                            <div class="home-week-progress-fill" style="width: {{ variant_panel.weekly_completion_pct }}%;"></div>
+                        </div>
+                        <p class="home-week-progress-label" data-progress-value="weekly_completion_display">{{ variant_panel.weekly_completion }}</p>
+                    </div>
+                    <div class="home-hero-action">
+                        <a href="{% url 'trainer_page' %}" class="btn-primary">{{ variant_panel.action_label }}</a>
+                    </div>
+                </div>
+
+                <div class="glassy-card home-weekly-card reveal" style="--delay: 0.2s;">
+                    <h3>Weekly Plan Overview</h3>
+                    <div class="home-weekly-row">
+                        {% for item in variant_panel.weekly_schedule %}
+                            <a href="{% url 'timetable_planner' %}?day={{ item.day|lower }}" class="home-day-chip {{ item.status }}">
+                                <span>{{ item.icon }} {{ item.day }}</span>
+                                <small>{{ item.workout }}</small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                    <div class="dashboard-grid home-snapshot-grid reveal" id="progress-snapshot-section" style="--delay: 0.24s;">
+                    {% for card in variant_panel.snapshot_cards %}
+                    <div class="glassy-card status-card compact-card home-stat-card hover-lift">
+                        <h3>{{ card.icon }} {{ card.title }}</h3>
+                        <p class="home-stat-value" {% if card.metric_key %}data-progress-value="{{ card.metric_key }}"{% endif %}>{{ card.value }}</p>
+                        <p class="home-stat-trend {{ card.trend_dir }}" {% if card.trend_key %}data-progress-trend="{{ card.trend_key }}"{% endif %}>{{ card.trend }} {% if card.trend_dir == 'up' %}↑{% else %}↓{% endif %}</p>
+                        <small>{{ card.subtitle }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="glassy-card home-actions-card reveal" style="--delay: 0.28s;">
+                    <h3>Quick Actions</h3>
+                    <div class="home-actions-grid">
+                        {% for action in variant_panel.quick_actions %}
+                            <a
+                                href="{% if action.label == 'View Full Plan' %}#recent-details-section{% elif action.label == 'View Progress' %}#progress-snapshot-section{% elif action.label == 'Adjust Schedule' %}{% url 'timetable_planner' %}{% elif action.label == 'Change Goal' %}{% url 'onboarding' %}{% elif action.label == 'Browse Programs' %}{% url 'home' %}{% else %}#overview-section{% endif %}"
+                                class="home-action-btn"
+                            >
+                                {{ action.icon }} {{ action.label }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        {% if dashboard_variant == 'individual' or dashboard_variant == 'hybrid' %}
+        <section id="workout-arrangement-section">
+            <h2 class="section-title">Workout Arrangement</h2>
+            {% if dashboard_variant == 'individual' and profile.training_type == 'home' and individual_home_panel %}
+            <div class="home-individual-stack">
+                <div class="glassy-card home-control-hero reveal" style="--delay: 0.16s;">
+                    <div>
+                        <h3>Our Today&apos;s Workouts</h3>
+                        <p>Goal: {{ individual_home_panel.goal }}</p>
+                        <p>Level: {{ individual_home_panel.level }}</p>
+                        <p>Streak: 🔥 {{ individual_home_panel.streak_days }} Days</p>
+                        <p class="home-hero-workout">Today: {{ individual_home_panel.today_workout }}</p>
+                        <div class="home-hero-meta">
+                            <span class="home-duration-badge">🕒 {{ individual_home_panel.duration }}</span>
+                        </div>
+                        <div class="home-week-progress">
+                            <div class="home-week-progress-fill" style="width: {{ individual_home_panel.weekly_completion_pct }}%;"></div>
+                        </div>
+                        <p class="home-week-progress-label" data-progress-value="weekly_completion_display">{{ individual_home_panel.weekly_completion }}</p>
+                    </div>
+                    <div class="home-hero-action">
+                        <a href="{{ individual_home_panel.start_workout_url|default:'#overview-section' }}" class="btn-primary">Start Today&apos;s Workout</a>
+                    </div>
+                </div>
+
+                <div class="glassy-card home-weekly-card reveal" style="--delay: 0.2s;">
+                    <h3>Weekly Plan Overview</h3>
+                    <div class="home-weekly-row">
+                        {% for item in individual_home_panel.weekly_schedule %}
+                            <a href="{{ item.link|default:'#workout-arrangement-section' }}" class="home-day-chip {{ item.status }}">
+                                <span>{{ item.icon }} {{ item.day }}</span>
+                                <small>{{ item.workout }}</small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="dashboard-grid home-snapshot-grid reveal" id="progress-snapshot-section" style="--delay: 0.24s;">
+                    {% for card in individual_home_panel.snapshot_cards %}
+                    <div class="glassy-card status-card compact-card home-stat-card hover-lift">
+                        <h3>{{ card.icon }} {{ card.title }}</h3>
+                        <p class="home-stat-value" {% if card.metric_key %}data-progress-value="{{ card.metric_key }}"{% endif %}>{{ card.value }}</p>
+                        <p class="home-stat-trend {{ card.trend_dir }}" {% if card.trend_key %}data-progress-trend="{{ card.trend_key }}"{% endif %}>{{ card.trend }} {% if card.trend_dir == 'up' %}↑{% else %}↓{% endif %}</p>
+                        <small>{{ card.subtitle }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="glassy-card home-actions-card reveal" style="--delay: 0.28s;">
+                    <h3>Quick Actions</h3>
+                    <div class="home-actions-grid">
+                        {% for action in individual_home_panel.quick_actions %}
+                            <a
+                                href="{% if action.label == 'View Full Plan' %}{% url 'timetable_planner' %}{% elif action.label == 'View Progress' %}#progress-snapshot-section{% elif action.label == 'Adjust Schedule' %}{% url 'timetable_planner' %}{% elif action.label == 'Change Goal' %}{% url 'onboarding' %}{% elif action.label == 'Browse Programs' %}{% url 'home' %}{% else %}#overview-section{% endif %}"
+                                class="home-action-btn"
+                            >
+                                {{ action.icon }} {{ action.label }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="dashboard-grid home-bottom-grid reveal" style="--delay: 0.32s;">
+                    <div class="glassy-card status-card hover-lift">
+                        <h3>Today&apos;s Equipment</h3>
+                        {% if individual_home_panel.equipment_list %}
+                            <ul class="status-list">
+                                {% for eq in individual_home_panel.equipment_list %}
+                                    <li>{{ eq.icon }} {{ eq.name }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p><span class="equipment-empty-badge">No equipment required</span></p>
+                            <p>{{ individual_home_panel.equipment_note }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="glassy-card status-card achievement-strip hover-lift">
+                        <h3>Achievement & Motivation</h3>
+                        <p><span class="achievement-tier-badge">{{ individual_home_panel.achievement_tier }}</span></p>
+                        <p>🏆 {{ individual_home_panel.achievement }}</p>
+                        <p>🔥 {{ individual_home_panel.motivation }}</p>
+                    </div>
+                    {% if individual_home_panel.nutrition.show %}
+                    <div class="glassy-card status-card hover-lift">
+                        <h3>Nutrition Snapshot</h3>
+                        <div class="calorie-ring" style="--p: {{ individual_home_panel.nutrition.calorie_progress_pct }};">
+                            <span>{{ individual_home_panel.nutrition.calorie_progress_pct }}%</span>
+                        </div>
+                        <p>Daily calorie target: {{ individual_home_panel.nutrition.daily_calorie_target }} kcal</p>
+                        <p>Water intake: {{ individual_home_panel.nutrition.water_intake }}</p>
+                        <a href="{{ individual_home_panel.nutrition.meal_plan_link }}" class="btn-secondary btn-small">Meal Plan</a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="glassy-card status-card long-term-card reveal hover-lift" style="--delay: 0.36s;">
+                    <h3>Total Minutes This Month</h3>
+                    <p class="long-term-value" data-progress-value="minutes_this_month_display">{{ individual_home_panel.total_minutes_month }} mins</p>
+                    <small>Your long-term consistency indicator.</small>
+                </div>
+            </div>
+            {% else %}
+            {% if variant_panel %}
+            <div class="home-individual-stack">
+                <div class="glassy-card home-control-hero reveal" style="--delay: 0.16s;">
+                    <div>
+                        <h3>{{ variant_panel.hero_title }}</h3>
+                        <p>Goal: {{ variant_panel.goal }}</p>
+                        <p>Level: {{ variant_panel.level }}</p>
+                        <p>Streak: 🔥 {{ variant_panel.streak_days }} Days</p>
+                        <div class="home-hero-meta">
+                            <span class="home-duration-badge">🕒 {{ variant_panel.duration }}</span>
+                        </div>
+                        <div class="home-week-progress">
+                            <div class="home-week-progress-fill" style="width: {{ variant_panel.weekly_completion_pct }}%;"></div>
+                        </div>
+                        <p class="home-week-progress-label" data-progress-value="weekly_completion_display">{{ variant_panel.weekly_completion }}</p>
+                    </div>
+                    <div class="home-hero-action">
+                        <a href="{{ variant_panel.action_url|default:'#overview-section' }}" class="btn-primary">
+                            {{ variant_panel.action_label }}
+                        </a>
+                    </div>
+                </div>
+
+                <div class="glassy-card home-weekly-card reveal" style="--delay: 0.2s;">
+                    <h3>Weekly Plan Overview</h3>
+                    <div class="home-weekly-row">
+                        {% for item in variant_panel.weekly_schedule %}
+                            <a href="{{ item.link|default:'#workout-arrangement-section' }}" class="home-day-chip {{ item.status }}">
+                                <span>{{ item.icon }} {{ item.day }}</span>
+                                <small>{{ item.workout }}</small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="dashboard-grid home-snapshot-grid reveal" id="progress-snapshot-section" style="--delay: 0.24s;">
+                    {% for card in variant_panel.snapshot_cards %}
+                    <div class="glassy-card status-card compact-card home-stat-card hover-lift">
+                        <h3>{{ card.icon }} {{ card.title }}</h3>
+                        <p class="home-stat-value" {% if card.metric_key %}data-progress-value="{{ card.metric_key }}"{% endif %}>{{ card.value }}</p>
+                        <p class="home-stat-trend {{ card.trend_dir }}" {% if card.trend_key %}data-progress-trend="{{ card.trend_key }}"{% endif %}>{{ card.trend }} {% if card.trend_dir == 'up' %}↑{% else %}↓{% endif %}</p>
+                        <small>{{ card.subtitle }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="glassy-card home-actions-card reveal" style="--delay: 0.28s;">
+                    <h3>Quick Actions</h3>
+                    <div class="home-actions-grid">
+                        {% for action in variant_panel.quick_actions %}
+                            <a
+                                href="{% if action.label == 'View Full Plan' %}#recent-details-section{% elif action.label == 'View Progress' %}#progress-snapshot-section{% elif action.label == 'Adjust Schedule' %}{% url 'timetable_planner' %}{% elif action.label == 'Change Goal' %}{% url 'onboarding' %}{% elif action.label == 'Browse Programs' %}{% url 'home' %}{% else %}#overview-section{% endif %}"
+                                class="home-action-btn"
+                            >
+                                {{ action.icon }} {{ action.label }}
+                            </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            <div class="dashboard-grid">
+                <div class="glassy-card status-card">
+                    <h3>Home Exercises</h3>
+                    <ul class="status-list">
+                        {% for item in exercise_plan.home_exercises %}
+                            <li>{{ item }}</li>
+                        {% empty %}
+                            <li>No home exercises generated.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="glassy-card status-card">
+                    <h3>Gym Exercises</h3>
+                    <ul class="status-list">
+                        {% for item in exercise_plan.gym_exercises %}
+                            <li>{{ item }}</li>
+                        {% empty %}
+                            <li>No gym exercises generated.</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                <div class="glassy-card status-card">
+                    {% if dashboard_variant == 'individual' %}
+                        <h3>Individual Notes</h3>
+                        <p>Use equipment availability to alternate home and gym emphasis each week.</p>
+                    {% else %}
+                        <h3>Hybrid Split</h3>
+                        <p>Keep home days for accessories and gym days for compound lifts.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% if dashboard_variant == 'hybrid' and hybrid_panel %}
+            <div class="glassy-card home-actions-card reveal" style="--delay: 0.34s;">
+                <h3>Hybrid Integration Hub</h3>
+                <p class="dashboard-hero-copy">{{ hybrid_panel.integration_note }}</p>
+                {% if hybrid_panel.assigned_trainer %}
+                    <p><strong>Selected trainer:</strong> {{ hybrid_panel.assigned_trainer }} at {{ hybrid_panel.assigned_trainer_time }}</p>
+                {% else %}
+                    <p><strong>Trainer setup pending.</strong> Complete trainer assignment from onboarding flow.</p>
+                {% endif %}
+                <div class="dashboard-grid dashboard-grid-compact">
+                    <div class="glassy-card status-card compact-card">
+                        <h3>Coaching Mix</h3>
+                        <p>{{ hybrid_panel.coach_sessions }} Coach-led / {{ hybrid_panel.self_sessions }} Self-guided</p>
+                    </div>
+                    <div class="glassy-card status-card compact-card">
+                        <h3>Location Mix</h3>
+                        <p>{{ hybrid_panel.gym_sessions }} Gym / {{ hybrid_panel.home_sessions }} Home</p>
+                    </div>
+                </div>
+                <div class="home-weekly-row">
+                    {% for slot in hybrid_panel.schedule %}
+                        <div class="home-day-chip hybrid-slot-chip">
+                            <span>{{ slot.day }}</span>
+                            <small>{{ slot.mode_label }}</small>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="dashboard-grid dashboard-grid-compact" style="margin-top: 12px;">
+                    {% for block in hybrid_panel.blended_workouts %}
+                    <div class="glassy-card status-card compact-card">
+                        <h3>{{ block.type }}</h3>
+                        <ul class="status-list">
+                            {% for item in block.items %}
+                                <li>{{ item }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% endif %}
+        </section>
+        {% endif %}
+
+        {% if dashboard_variant != 'individual' or profile.training_type != 'home' or not individual_home_panel %}
+        <section class="reveal" id="recent-details-section" style="--delay: 0.22s;">
+            <h2 class="section-title">Recent Plan Details</h2>
+            <div class="dashboard-grid dashboard-grid-compact">
+                <div class="glassy-card status-card compact-card dashboard-plan-list-card">
+                    <h3>Plans</h3>
+                    {% if plans %}
+                        <ul class="status-list">
+                            {% for plan in plans %}
+                                <li>{{ plan.title }} - {{ plan.summary }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>No plans created yet.</p>
+                    {% endif %}
+                </div>
+                <div class="glassy-card status-card compact-card">
+                    <h3>Consistency Tip</h3>
+                    <p>Pre-schedule your next 3 sessions to improve completion rates this week.</p>
+                </div>
+                <div class="glassy-card status-card compact-card">
+                    <h3>Recovery Tip</h3>
+                    <p>Track sleep, hydration, and mobility to support workout quality.</p>
+                </div>
+            </div>
+        </section>
+        {% endif %}
+        </div>
+        </div>
+    </div>
+</section>
+<script>
+    (function () {
+        const revealEls = document.querySelectorAll('.reveal');
+        if (!('IntersectionObserver' in window)) {
+            revealEls.forEach((el) => el.classList.add('visible'));
+            return;
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.14 });
+
+        revealEls.forEach((el) => observer.observe(el));
+    })();
+
+    (function () {
+        const dashboardPageFrame = document.getElementById('dashboardPageFrame');
+        const dashboardSideNav = document.getElementById('dashboardSideNav');
+        const dashboardNavToggle = document.getElementById('dashboardNavToggle');
+        const dashboardNavArrow = document.getElementById('dashboardNavArrow');
+        if (!dashboardPageFrame || !dashboardSideNav || !dashboardNavToggle || !dashboardNavArrow) return;
+
+        const storageKey = 'dashboardNavCollapsed';
+        const setArrowState = () => {
+            const collapsed = dashboardPageFrame.classList.contains('nav-collapsed');
+            dashboardNavArrow.textContent = collapsed ? '▶' : '◀';
+            dashboardNavToggle.setAttribute('aria-label', collapsed ? 'Expand menu' : 'Collapse menu');
+        };
+
+        if (localStorage.getItem(storageKey) === 'true') {
+            dashboardPageFrame.classList.add('nav-collapsed');
+        }
+        setArrowState();
+
+        dashboardNavToggle.addEventListener('click', () => {
+            dashboardPageFrame.classList.toggle('nav-collapsed');
+            localStorage.setItem(storageKey, dashboardPageFrame.classList.contains('nav-collapsed'));
+            setArrowState();
+        });
+    })();
+
+    (function () {
+        const progressUrl = "{{ progress_metrics_url }}";
+        if (!progressUrl) return;
+
+        const applyMetrics = (metrics) => {
+            if (!metrics) return;
+            document.querySelectorAll('[data-progress-value]').forEach((el) => {
+                const key = el.getAttribute('data-progress-value');
+                if (key && Object.prototype.hasOwnProperty.call(metrics, key)) {
+                    el.textContent = metrics[key];
+                }
+            });
+            document.querySelectorAll('[data-progress-trend]').forEach((el) => {
+                const key = el.getAttribute('data-progress-trend');
+                if (key && Object.prototype.hasOwnProperty.call(metrics, key)) {
+                    const current = el.textContent || '';
+                    const suffix = current.includes('↑') ? ' ↑' : (current.includes('↓') ? ' ↓' : '');
+                    el.textContent = `${metrics[key]}${suffix}`;
+                }
+            });
+        };
+
+        const syncMetrics = async () => {
+            try {
+                const res = await fetch(progressUrl, { credentials: 'same-origin' });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data && data.ok) applyMetrics(data.metrics);
+            } catch (_) {
+                // silent fail, keep dashboard usable
+            }
+        };
+
+        syncMetrics();
+        setInterval(syncMetrics, 15000);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) syncMetrics();
+        });
+    })();
+</script>
+{% endblock %}

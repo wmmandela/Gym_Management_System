@@ -84,6 +84,12 @@ class MemberProfile(models.Model):
         ('maybe', 'Maybe later'),
     ]
 
+    PROGRAM_TYPE_CHOICES = [
+        ('personal_trainer', 'Personal trainer'),
+        ('individual', 'Individual'),
+        ('hybrid', 'Hybrid'),
+    ]
+
     COACHING_STYLE_CHOICES = [
         ('strict', 'Strict & structured'),
         ('supportive', 'Supportive & flexible'),
@@ -136,8 +142,11 @@ class MemberProfile(models.Model):
     gym_access = models.CharField(max_length=20, choices=GYM_ACCESS_CHOICES)
 
     personal_coaching = models.CharField(max_length=20, choices=COACHING_CHOICES)
+    program_type = models.CharField(max_length=20, choices=PROGRAM_TYPE_CHOICES, default='individual')
     coaching_style = models.CharField(max_length=20, choices=COACHING_STYLE_CHOICES)
     instructor_preference = models.CharField(max_length=20, choices=INSTRUCTOR_PREFERENCE_CHOICES, blank=True)
+    assigned_trainer = models.CharField(max_length=120, blank=True)
+    assigned_trainer_time = models.CharField(max_length=40, blank=True)
 
     tracking_metrics = models.CharField(max_length=255, blank=True)
     progress_check_frequency = models.CharField(max_length=20, choices=PROGRESS_CHECK_CHOICES)
@@ -163,3 +172,52 @@ class WorkoutPlan(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.user.email}"
+
+
+class TimetablePlan(models.Model):
+    User = get_user_model()
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='timetable_plan')
+    schedule = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Timetable - {self.user.email}"
+
+
+class MealTimetablePlan(models.Model):
+    User = get_user_model()
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='meal_timetable_plan')
+    schedule = models.JSONField(default=list, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Meal Timetable - {self.user.email}"
+
+
+class WorkoutSessionEvent(models.Model):
+    User = get_user_model()
+    EVENT_TYPE_CHOICES = [
+        ('start', 'Start'),
+        ('complete', 'Complete'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='workout_session_events')
+    event_type = models.CharField(max_length=12, choices=EVENT_TYPE_CHOICES)
+    workout_name = models.CharField(max_length=140, blank=True)
+    mode = models.CharField(max_length=20, blank=True)
+    location = models.CharField(max_length=20, blank=True)
+    duration_minutes = models.PositiveIntegerField(default=0)
+    calories_estimated = models.PositiveIntegerField(default=0)
+    occurred_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', 'event_type', 'occurred_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} {self.event_type} {self.workout_name}"

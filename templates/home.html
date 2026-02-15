@@ -3,23 +3,70 @@
 {% block title %}GetFit - Home{% endblock %}
 
 {% block content %}
+<section class="app-preview-section">
+    <div class="container">
+        <div class="app-preview-header">
+            <h1 class="hero-title">Smart Fitness Experience</h1>
+            <p>Modern card-driven UI inspired by mobile-first fitness products.</p>
+        </div>
+        <div class="app-preview-grid">
+            <article class="glassy-card app-preview-card">
+                <div class="app-preview-icon">🧍</div>
+                <h3>Choose Your Path</h3>
+                <p>Select personal trainer, individual, or hybrid and get a tailored flow.</p>
+                <ul class="status-list">
+                    <li>Personalized onboarding journey</li>
+                    <li>Goal-first planning</li>
+                    <li>Adaptive recommendations</li>
+                </ul>
+            </article>
+            <article class="glassy-card app-preview-card app-preview-card-featured">
+                <div class="app-preview-top">
+                    <p>Today Progress</p>
+                    <span>Active</span>
+                </div>
+                <h3>2,910 kcal</h3>
+                <p class="app-preview-sub">Daily target and habit metrics at a glance.</p>
+                <div class="app-mini-metrics">
+                    <span>Goal</span>
+                    <span>Food</span>
+                    <span>Exercise</span>
+                </div>
+                <div class="app-progress-track">
+                    <div class="app-progress-fill"></div>
+                </div>
+            </article>
+            <article class="glassy-card app-preview-card">
+                <div class="app-preview-icon">✨</div>
+                <h3>Smart Logging Tools</h3>
+                <p>Voice log, meal scan, and workout capture in one clean interface.</p>
+                <div class="app-tool-grid">
+                    <span>Voice</span>
+                    <span>Meal</span>
+                    <span>Tracker</span>
+                </div>
+            </article>
+        </div>
+    </div>
+</section>
+
 <section class="hero-search-section">
     <div class="hero-search-content">
-        <h1 class="hero-title">Transform Your Body,<br>Transform Your Life</h1>
+        <h2 class="hero-title">Train With GetFit Kenya,<br>Anytime You Need</h2>
 
         <div class="search-container">
             <div class="search-input-group">
                 <span class="search-icon">🔍</span>
-                <input type="text" class="search-input" placeholder="Search for gyms, classes, or trainers...">
+                <input type="text" class="search-input" placeholder="Search programs, classes, coaches, nutrition...">
             </div>
         </div>
 
         <div class="quick-filters">
             <div class="filter-chip active">All</div>
-            <div class="filter-chip">Gyms</div>
+            <div class="filter-chip">Programs</div>
             <div class="filter-chip">Classes</div>
-            <div class="filter-chip">Trainers</div>
-            <div class="filter-chip">Equipment</div>
+            <div class="filter-chip">Coaches</div>
+            <div class="filter-chip">Nutrition</div>
         </div>
     </div>
 </section>
@@ -28,42 +75,42 @@
     <div class="container">
         <h2 class="section-title">Browse Categories</h2>
         <div class="categories-grid">
-            <a href="#" class="category-card">
+            <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">🏋️</div>
                 <h3>Weight Training</h3>
-                <p>24 Gyms</p>
+                <p>24 Programs</p>
             </a>
-            <a href="#" class="category-card">
+            <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">🧘</div>
                 <h3>Yoga</h3>
                 <p>18 Classes</p>
             </a>
-            <a href="#" class="category-card">
+            <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">🏃</div>
                 <h3>Cardio</h3>
-                <p>32 Gyms</p>
+                <p>32 Programs</p>
             </a>
-            <a href="#" class="category-card">
+            <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">🚴</div>
                 <h3>Spinning</h3>
                 <p>12 Classes</p>
             </a>
-            <a href="#" class="category-card">
+            <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">🥊</div>
                 <h3>CrossFit</h3>
-                <p>8 Gyms</p>
+                <p>8 Programs</p>
             </a>
-            <a href="#" class="category-card">
+            <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">🏊</div>
                 <h3>Swimming</h3>
-                <p>6 Gyms</p>
+                <p>6 Programs</p>
             </a>
-            <a href="#" class="category-card">
+            <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">🥗</div>
                 <h3>Nutrition</h3>
                 <p>15 Plans</p>
             </a>
-            <a href="#" class="category-card">
+            <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">👨‍🏫</div>
                 <h3>Personal Training</h3>
                 <p>45 Trainers</p>
@@ -74,7 +121,7 @@
 
 <section class="featured-section">
     <div class="container">
-        <h2 class="section-title">Featured Gyms</h2>
+        <h2 class="section-title">Featured GetFit Programs</h2>
         <div class="featured-grid">
             <div class="glassy-card featured-card">
                 <div class="featured-image">
@@ -82,10 +129,10 @@
                     <span class="discount-badge">20% OFF</span>
                 </div>
                 <div class="featured-body">
-                    <h4>FitLife Premium Gym</h4>
-                    <p>Downtown • Open 24/7</p>
-                    <p class="price-text">From $49/month</p>
-                    <a href="#" class="btn-primary">View Details</a>
+                    <h4>GetFit Strength Pro</h4>
+                    <p>Westlands, Nairobi • Open 24/7</p>
+                    <p class="price-text">From KSh 6,500/month</p>
+                    <a href="{% url 'signup' %}" class="btn-primary">View Details</a>
                 </div>
             </div>
             <div class="glassy-card featured-card">
@@ -94,10 +141,10 @@
                     <span class="discount-badge">15% OFF</span>
                 </div>
                 <div class="featured-body">
-                    <h4>PowerHouse Fitness</h4>
-                    <p>Midtown • Pool Available</p>
-                    <p class="price-text">From $39/month</p>
-                    <a href="#" class="btn-primary">View Details</a>
+                    <h4>GetFit Cardio Plus</h4>
+                    <p>Kilimani, Nairobi • Pool Available</p>
+                    <p class="price-text">From KSh 5,200/month</p>
+                    <a href="{% url 'signup' %}" class="btn-primary">View Details</a>
                 </div>
             </div>
             <div class="glassy-card featured-card">
@@ -106,10 +153,10 @@
                     <span class="discount-badge">25% OFF</span>
                 </div>
                 <div class="featured-body">
-                    <h4>FlexZone Yoga Studio</h4>
-                    <p>Uptown • Premium Classes</p>
-                    <p class="price-text">From $59/month</p>
-                    <a href="#" class="btn-primary">View Details</a>
+                    <h4>GetFit Flow Studio</h4>
+                    <p>Karen, Nairobi • Premium Classes</p>
+                    <p class="price-text">From KSh 7,800/month</p>
+                    <a href="{% url 'signup' %}" class="btn-primary">View Details</a>
                 </div>
             </div>
         </div>
@@ -122,23 +169,23 @@
         <div class="steps-grid">
             <div class="glassy-card step-card">
                 <div class="step-number">1</div>
-                <h4>Search</h4>
-                <p>Find the perfect gym, class, or trainer near you using our powerful search tools.</p>
+                <h4>Join</h4>
+                <p>Create your GetFit account and set your fitness goals.</p>
             </div>
             <div class="glassy-card step-card">
                 <div class="step-number">2</div>
-                <h4>Compare</h4>
-                <p>Compare prices, amenities, reviews, and schedules to make the best choice.</p>
+                <h4>Select</h4>
+                <p>Choose a GetFit plan that matches your schedule and budget in Kenya.</p>
             </div>
             <div class="glassy-card step-card">
                 <div class="step-number">3</div>
                 <h4>Book</h4>
-                <p>Book your membership or class online instantly with flexible payment options.</p>
+                <p>Book classes and coaching sessions directly on GetFit.</p>
             </div>
             <div class="glassy-card step-card">
                 <div class="step-number">4</div>
                 <h4>Train</h4>
-                <p>Start your fitness journey with access to premium facilities and expert trainers.</p>
+                <p>Train with GetFit coaches and track progress every week.</p>
             </div>
         </div>
     </div>
@@ -150,7 +197,7 @@
         <div class="pricing-grid">
             <div class="glassy-card pricing-card">
                 <h3>Basic</h3>
-                <div class="price">$29<span>/month</span></div>
+                <div class="price">KSh 3,900<span>/month</span></div>
                 <ul class="features-list">
                     <li>✅ Gym Access</li>
                     <li>✅ Free Locker</li>
@@ -158,12 +205,12 @@
                     <li>❌ Personal Trainer</li>
                     <li>❌ Sauna Access</li>
                 </ul>
-                <a href="#" class="btn-secondary">Choose Plan</a>
+                <a href="{% url 'signup' %}" class="btn-secondary">Choose Plan</a>
             </div>
             <div class="glassy-card pricing-card featured">
                 <div class="popular-tag">Most Popular</div>
                 <h3>Pro</h3>
-                <div class="price">$49<span>/month</span></div>
+                <div class="price">KSh 6,500<span>/month</span></div>
                 <ul class="features-list">
                     <li>✅ 24/7 Gym Access</li>
                     <li>✅ Group Classes</li>
@@ -171,11 +218,11 @@
                     <li>❌ Personal Trainer</li>
                     <li>❌ Sauna Access</li>
                 </ul>
-                <a href="#" class="btn-primary">Choose Plan</a>
+                <a href="{% url 'signup' %}" class="btn-primary">Choose Plan</a>
             </div>
             <div class="glassy-card pricing-card">
                 <h3>Elite</h3>
-                <div class="price">$89<span>/month</span></div>
+                <div class="price">KSh 11,900<span>/month</span></div>
                 <ul class="features-list">
                     <li>✅ 24/7 Gym Access</li>
                     <li>✅ Unlimited Classes</li>
@@ -183,7 +230,7 @@
                     <li>✅ Sauna & Spa</li>
                     <li>✅ Nutrition Plan</li>
                 </ul>
-                <a href="#" class="btn-secondary">Choose Plan</a>
+                <a href="{% url 'signup' %}" class="btn-secondary">Choose Plan</a>
             </div>
         </div>
     </div>
@@ -221,21 +268,21 @@
                     <span class="contact-icon">📍</span>
                     <div>
                         <h4>Address</h4>
-                        <p>123 Fitness Street, New York, NY 10001</p>
+                        <p>GetFit House, Ngong Road, Nairobi, Kenya</p>
                     </div>
                 </div>
                 <div class="contact-item">
                     <span class="contact-icon">📞</span>
                     <div>
                         <h4>Phone</h4>
-                        <p>+1 (555) 123-4567</p>
+                        <p>+254 700 123 456</p>
                     </div>
                 </div>
                 <div class="contact-item">
                     <span class="contact-icon">✉️</span>
                     <div>
                         <h4>Email</h4>
-                        <p>info@getfitgym.com</p>
+                        <p>info@getfit.co.ke</p>
                     </div>
                 </div>
                 <div class="contact-item">
@@ -246,11 +293,12 @@
                     </div>
                 </div>
             </div>
-            <form class="contact-form">
-                <input type="text" placeholder="Your Name" required>
-                <input type="email" placeholder="Your Email" required>
-                <input type="text" placeholder="Subject" required>
-                <textarea placeholder="Your Message" rows="5" required></textarea>
+            <form class="contact-form" method="post" action="{% url 'contact_submit' %}">
+                {% csrf_token %}
+                <input type="text" name="name" placeholder="Your Name" required>
+                <input type="email" name="email" placeholder="Your Email" required>
+                <input type="text" name="subject" placeholder="Subject" required>
+                <textarea name="message" placeholder="Your Message" rows="5" required></textarea>
                 <button type="submit" class="btn-primary">Send Message</button>
             </form>
         </div>

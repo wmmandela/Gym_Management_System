@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+
+{% block title %}GetFit - Trainer Workout Session{% endblock %}
+
+{% block content %}
+<section class="self-workout-shell trainer-session-shell">
+    <div class="container">
+        <div class="self-workout-topline trainer-session-topline">
+            <h1>Coach-Led Session</h1>
+            <p>{{ selected_day }} • {{ workout_context.today_workout }} • {{ selected_day_plan.location }}</p>
+        </div>
+
+        <div class="glassy-card trainer-session-greeting">
+            <div>
+                <p class="trainer-greeting-text" id="trainerSessionGreeting">Good Day{% if user_name %}, {{ user_name }}{% endif %}</p>
+                <p class="trainer-greeting-date">{% now "D, d M Y" %}</p>
+            </div>
+            <div class="trainer-session-badges">
+                <span class="self-chip">{{ profile.get_primary_goal_display }}</span>
+                <span class="self-chip">{{ profile.get_fitness_level_display }}</span>
+                <span class="self-chip">Coach-led</span>
+            </div>
+        </div>
+
+        <div class="self-workout-layout">
+            <article class="glassy-card self-workout-player">
+                <div class="self-player-head">
+                    <div>
+                        <p class="self-kicker">Live Trainer Cue</p>
+                        <h2 id="exerciseName">Loading...</h2>
+                        <p id="exerciseInstruction" class="self-muted"></p>
+                    </div>
+                    <div class="self-player-badges">
+                        <span class="self-chip">Trainer: {{ profile.assigned_trainer }}</span>
+                        <span class="self-chip">Time: {{ workout_context.trainer_time }}</span>
+                        <span class="self-chip">{{ workout_context.duration }}</span>
+                    </div>
+                </div>
+
+                <div class="self-demo-stage" id="selfDemoStage">
+                    <div class="self-figure">
+                        <span class="head"></span>
+                        <span class="body"></span>
+                        <span class="arm arm-l"></span>
+                        <span class="arm arm-r"></span>
+                        <span class="leg leg-l"></span>
+                        <span class="leg leg-r"></span>
+                    </div>
+                </div>
+
+                <div class="self-timer-block">
+                    <div class="self-phase-row">
+                        <span id="phaseBadge" class="phase-badge">Exercise</span>
+                        <span id="stepCounter" class="self-muted"></span>
+                    </div>
+                    <div id="timerDisplay" class="self-timer-display">00:00</div>
+                    <div class="self-progress-track">
+                        <div id="exerciseProgressFill" class="self-progress-fill"></div>
+                    </div>
+                </div>
+
+                <div class="self-controls">
+                    <button type="button" class="btn-secondary btn-small" id="prevBtn">Previous</button>
+                    <button type="button" class="btn-primary" id="startPauseBtn">Start Session</button>
+                    <button type="button" class="btn-secondary btn-small" id="nextBtn">Next</button>
+                    <button type="button" class="btn-secondary btn-small" id="resetBtn">Reset</button>
+                </div>
+            </article>
+
+            <aside class="self-workout-sidebar">
+                <div class="glassy-card self-session-card">
+                    <h3>Today&apos;s Session</h3>
+                    <ul class="status-list">
+                        <li><strong>Workout:</strong> {{ workout_context.today_workout }}</li>
+                        <li><strong>Mode:</strong> Coach-led</li>
+                        <li><strong>Location:</strong> {{ selected_day_plan.location }}</li>
+                        <li><strong>Primary Goal:</strong> {{ profile.get_primary_goal_display }}</li>
+                        <li><strong>Fitness Level:</strong> {{ profile.get_fitness_level_display }}</li>
+                        <li><strong>Duration:</strong> {{ workout_context.duration }}</li>
+                        <li><strong>Calories Target:</strong> ~{{ session_estimated_calories }} kcal</li>
+                    </ul>
+                    <a href="{% url 'timetable_planner' %}" class="btn-secondary btn-small">Change Timetable</a>
+                </div>
+
+                <div class="glassy-card self-upnext-card">
+                    <h3>Coach Timeline</h3>
+                    <div class="self-upnext-list" id="upNextList"></div>
+                </div>
+            </aside>
+        </div>
+    </div>
+</section>
+
+{{ trainer_session_sequence|json_script:"trainer-session-sequence-data" }}
+<script>
+    (() => {
+        const progressEventUrl = "{{ progress_event_url }}";
+        const completeRedirectUrl = "{{ complete_redirect_url|escapejs }}";
+        const workoutMeta = {
+            workout_name: "{{ workout_context.today_workout|escapejs }}",
+            mode: "Coach-led",
+            location: "{{ selected_day_plan.location|escapejs }}",
+            duration_minutes: "{{ session_duration_minutes }}",
+            calories_estimated: "{{ session_estimated_calories }}",
+        };
+        const sequence = JSON.parse(document.getElementById('trainer-session-sequence-data').textContent || '[]');
+        if (!sequence.length) return;
+
+        const greetingEl = document.getElementById('trainerSessionGreeting');
+        if (greetingEl) {
+            const hour = new Date().getHours();
+            let greeting = 'Good Day';
+            if (hour < 12) greeting = 'Good Morning';
+            else if (hour < 18) greeting = 'Good Afternoon';
+            else greeting = 'Good Evening';
+            greetingEl.textContent = `${greeting}{% if user_name %}, {{ user_name }}{% endif %}`;
+        }
+
+        const exerciseName = document.getElementById('exerciseName');
+        const exerciseInstruction = document.getElementById('exerciseInstruction');
+        const phaseBadge = document.getElementById('phaseBadge');
+        const stepCounter = document.getElementById('stepCounter');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const exerciseProgressFill = document.getElementById('exerciseProgressFill');
+        const demoStage = document.getElementById('selfDemoStage');
+        const upNextList = document.getElementById('upNextList');
+
+        const startPauseBtn = document.getElementById('startPauseBtn');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        let index = 0;
+        let phase = 'exercise';
+        let remaining = Number(sequence[0].duration_sec || 40);
+        let running = false;
+        let startLogged = false;
+        let completeLogged = false;
+        let timerId = null;
+
+        const getCsrfToken = () => {
+            const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : '';
+        };
+
+        const postProgressEvent = async (eventType) => {
+            if (!progressEventUrl) return;
+            const formData = new URLSearchParams();
+            formData.set('event_type', eventType);
+            formData.set('workout_name', workoutMeta.workout_name);
+            formData.set('mode', workoutMeta.mode);
+            formData.set('location', workoutMeta.location);
+            formData.set('duration_minutes', workoutMeta.duration_minutes);
+            formData.set('calories_estimated', workoutMeta.calories_estimated);
+            try {
+                await fetch(progressEventUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': getCsrfToken(),
+                    },
+                    body: formData.toString(),
+                    credentials: 'same-origin',
+                });
+            } catch (_) {
+                // Keep workout flow active even if logging fails.
+            }
+        };
+
+        const formatTime = (seconds) => {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = Math.max(0, seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        };
+
+        const demoClassMap = {
+            run: 'demo-high-knees',
+            squat: 'demo-squat',
+            lunge: 'demo-lunge',
+            row: 'demo-row',
+            press: 'demo-press',
+            deadlift: 'demo-deadlift',
+            plank: 'demo-plank',
+            mountain_climber: 'demo-mountain',
+            stretch: 'demo-stretch',
+        };
+
+        const renderTimeline = () => {
+            upNextList.innerHTML = sequence.map((item, i) => {
+                const active = i === index ? 'active' : '';
+                return `
+                    <div class="self-upnext-item ${active}">
+                        <p><strong>${i + 1}. ${item.name}</strong></p>
+                        <small>${item.duration_sec}s work • ${item.break_sec}s rest</small>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        const renderCurrent = () => {
+            const current = sequence[index];
+            const totalForPhase = phase === 'exercise'
+                ? Number(current.duration_sec || 1)
+                : Number(current.break_sec || 1);
+            const pct = Math.max(0, Math.min(100, ((totalForPhase - remaining) / totalForPhase) * 100));
+
+            exerciseName.textContent = current.name;
+            exerciseInstruction.textContent = current.instruction;
+            phaseBadge.textContent = phase === 'exercise' ? 'Exercise' : 'Break';
+            stepCounter.textContent = `Step ${index + 1} of ${sequence.length}`;
+            timerDisplay.textContent = formatTime(remaining);
+            exerciseProgressFill.style.width = `${pct}%`;
+
+            demoStage.className = 'self-demo-stage';
+            demoStage.classList.add(demoClassMap[current.demo] || 'demo-squat');
+            renderTimeline();
+        };
+
+        const stopTick = () => {
+            if (timerId) {
+                clearInterval(timerId);
+                timerId = null;
+            }
+        };
+
+        const pause = () => {
+            running = false;
+            stopTick();
+            startPauseBtn.textContent = 'Resume Session';
+        };
+
+        const start = () => {
+            if (running) return;
+            if (!startLogged) {
+                startLogged = true;
+                postProgressEvent('start');
+            }
+            running = true;
+            startPauseBtn.textContent = 'Pause Session';
+            stopTick();
+            timerId = setInterval(() => {
+                remaining -= 1;
+                if (remaining <= 0) {
+                    const current = sequence[index];
+                    if (phase === 'exercise' && Number(current.break_sec || 0) > 0 && index < sequence.length) {
+                        phase = 'break';
+                        remaining = Number(current.break_sec || 20);
+                    } else if (index < sequence.length - 1) {
+                        index += 1;
+                        phase = 'exercise';
+                        remaining = Number(sequence[index].duration_sec || 40);
+                    } else {
+                        pause();
+                        if (!completeLogged) {
+                            completeLogged = true;
+                            postProgressEvent('complete');
+                        }
+                        phaseBadge.textContent = 'Complete';
+                        timerDisplay.textContent = '00:00';
+                        exerciseProgressFill.style.width = '100%';
+                        startPauseBtn.textContent = 'Completed - Back to Dashboard';
+                        startPauseBtn.disabled = false;
+                        return;
+                    }
+                }
+                renderCurrent();
+            }, 1000);
+        };
+
+        const resetWorkout = () => {
+            pause();
+            index = 0;
+            phase = 'exercise';
+            remaining = Number(sequence[0].duration_sec || 40);
+            startLogged = false;
+            completeLogged = false;
+            startPauseBtn.disabled = false;
+            startPauseBtn.textContent = 'Start Session';
+            renderCurrent();
+        };
+
+        startPauseBtn.addEventListener('click', () => {
+            if (completeLogged && !running && completeRedirectUrl) {
+                window.location.href = completeRedirectUrl;
+                return;
+            }
+            if (running) pause();
+            else start();
+        });
+        nextBtn.addEventListener('click', () => {
+            pause();
+            if (index < sequence.length - 1) index += 1;
+            phase = 'exercise';
+            remaining = Number(sequence[index].duration_sec || 40);
+            renderCurrent();
+        });
+        prevBtn.addEventListener('click', () => {
+            pause();
+            if (index > 0) index -= 1;
+            phase = 'exercise';
+            remaining = Number(sequence[index].duration_sec || 40);
+            renderCurrent();
+        });
+        resetBtn.addEventListener('click', resetWorkout);
+
+        renderCurrent();
+    })();
+</script>
+{% endblock %}

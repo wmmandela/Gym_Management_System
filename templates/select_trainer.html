@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+
+{% block title %}GetFit - Select Trainer{% endblock %}
+
+{% block content %}
+<section class="dashboard-shell">
+    <div class="container">
+        <div class="dashboard-topline">
+            <h1>Select Your Trainer</h1>
+            <p>Choose your trainer once, then proceed to plan your weekly timetable.</p>
+        </div>
+
+        <div class="featured-grid dashboard-trainer-grid">
+            {% for trainer in trainer_recommendations %}
+                <div class="glassy-card featured-card dashboard-trainer-card">
+                    <div class="featured-body">
+                        <h4>{{ trainer.name }}</h4>
+                        <p>Match score: {{ trainer.score }}</p>
+                        <p class="price-text">Best slot: {{ trainer.recommended_time }}</p>
+                        <form method="post" action="{% url 'select_trainer' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="trainer_id" value="{{ trainer.id }}">
+                            <input type="hidden" name="redirect_to" value="timetable_planner">
+                            <div class="form-field">
+                                <label for="time_{{ trainer.id }}">Choose time</label>
+                                <select id="time_{{ trainer.id }}" name="trainer_time" required>
+                                    {% for slot in trainer.times %}
+                                        <option value="{{ slot }}">{{ slot }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-primary">Select Trainer & Continue</button>
+                        </form>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="glassy-card status-card">
+                    <p>No trainer recommendations available yet.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

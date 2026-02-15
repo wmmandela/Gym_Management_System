@@ -1,0 +1,91 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}GetFit{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+</head>
+<body>
+    <div class="page-wrapper">
+        <header class="header">
+            <div class="header-content">
+                <a href="{% url 'home' %}" class="logo">GetFit</a>
+                <nav class="nav-links">
+                    {% if request.user.is_authenticated %}
+                        <a href="{% url 'logout' %}" class="btn-signin">Logout</a>
+                    {% else %}
+                        <a href="{% url 'signin' %}" class="btn-signin">Sign In</a>
+                    {% endif %}
+                </nav>
+            </div>
+        </header>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+
+        {% if request.path == '/' %}
+            <footer class="footer">
+                <div class="container">
+                    <div class="footer-grid">
+                        <div class="footer-about">
+                            <a href="{% url 'home' %}" class="logo">
+                                <h1>GETFIT</h1>
+                            </a>
+                            <p>Transforming lives through fitness since 2014. Join our community and start your journey today.</p>
+                        </div>
+                        <div class="footer-links">
+                            <h4>Quick Links</h4>
+                            <ul>
+                                <li><a href="{% url 'home' %}">Home</a></li>
+                                <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                                <li><a href="{% url 'signin' %}">Sign In</a></li>
+                                <li><a href="{% url 'signup' %}">Sign Up</a></li>
+                            </ul>
+                        </div>
+                        <div class="footer-social">
+                            <h4>Follow Us</h4>
+                            <div class="social-icons">
+                                <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                                <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                                <a href="https://x.com" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+                                <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" class="social-icon" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="footer-bottom">
+                        <p>&copy; 2026 GETFIT Kenya. All rights reserved.</p>
+                    </div>
+                </div>
+            </footer>
+        {% else %}
+            <div class="minimal-socials">
+                <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                <a href="https://x.com" target="_blank" rel="noopener noreferrer" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+                <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                <a href="https://www.google.com" target="_blank" rel="noopener noreferrer" aria-label="Google"><i class="fa-brands fa-google"></i></a>
+            </div>
+        {% endif %}
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const messages = document.querySelectorAll(".message");
+            messages.forEach((message) => {
+                setTimeout(() => {
+                    message.classList.add("is-hiding");
+                    setTimeout(() => message.remove(), 360);
+                }, 3000);
+            });
+        });
+    </script>
+</body>
+</html>

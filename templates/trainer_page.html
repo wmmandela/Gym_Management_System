@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+
+{% block title %}GetFit - Trainer Page{% endblock %}
+
+{% block content %}
+<section class="trainer-page-shell">
+    <div class="container trainer-page-container">
+        <div class="trainer-page-titlebar">
+            <h1>Your Smart Training Hub</h1>
+            <p>Plan clearly. Train consistently. Track meaningful progress.</p>
+        </div>
+
+        <div class="trainer-page-frame" id="trainerPageFrame">
+            <aside class="glassy-card trainer-nav-panel" id="trainerNavPanel">
+                <p class="trainer-nav-title">Menu</p>
+                <a href="{% url 'home' %}" class="trainer-nav-item">
+                    <span class="trainer-nav-icon">⌂</span><span class="trainer-nav-label">Home</span>
+                </a>
+                <a href="{% url 'dashboard' %}" class="trainer-nav-item">
+                    <span class="trainer-nav-icon">🏠</span><span class="trainer-nav-label">Dashboard</span>
+                </a>
+                <a href="#trainer-overview-section" class="trainer-nav-item">
+                    <span class="trainer-nav-icon">🧭</span><span class="trainer-nav-label">Overview</span>
+                </a>
+                <a href="#workout-player" class="trainer-nav-item">
+                    <span class="trainer-nav-icon">🎯</span><span class="trainer-nav-label">Workout Player</span>
+                </a>
+                <a href="{% url 'trainer_workout' %}" class="trainer-nav-item">
+                    <span class="trainer-nav-icon">▶</span><span class="trainer-nav-label">Start Workout</span>
+                </a>
+                <a href="#session-timeline" class="trainer-nav-item">
+                    <span class="trainer-nav-icon">🗂️</span><span class="trainer-nav-label">Session Timeline</span>
+                </a>
+                <a href="#tracking-panel" class="trainer-nav-item">
+                    <span class="trainer-nav-icon">📈</span><span class="trainer-nav-label">Tracking</span>
+                </a>
+                <a href="{% url 'timetable_planner' %}" class="trainer-nav-item">
+                    <span class="trainer-nav-icon">🗓️</span><span class="trainer-nav-label">Change Timetable</span>
+                </a>
+                <a href="{% url 'personal_trainer_dashboard' %}" class="trainer-nav-item">
+                    <span class="trainer-nav-icon">📊</span><span class="trainer-nav-label">Program Dashboard</span>
+                </a>
+                <a href="{% url 'onboarding' %}" class="trainer-nav-item">
+                    <span class="trainer-nav-icon">✏️</span><span class="trainer-nav-label">Edit Profile</span>
+                </a>
+                <a href="{% url 'logout' %}" class="trainer-nav-item trainer-nav-item-danger">
+                    <span class="trainer-nav-icon">↩</span><span class="trainer-nav-label">Logout</span>
+                </a>
+            </aside>
+            <button type="button" class="trainer-menu-handle" id="trainerNavToggle" aria-label="Collapse menu">
+                <span id="trainerNavArrow">◀</span>
+            </button>
+
+            <div class="trainer-page-content">
+                <div class="trainer-welcome-banner" id="trainerWelcomeBanner">
+                    Welcome{% if user_name %}, {{ user_name }}{% endif %}. You are booked with {{ profile.assigned_trainer }} at {{ workout_context.trainer_time }}.
+                </div>
+
+                <div class="trainer-greeting-row" id="trainer-overview-section">
+                    <div class="glassy-card trainer-greeting-chip">
+                        <p class="trainer-greeting-text" id="trainerGreetingText">Good Day{% if user_name %}, {{ user_name }}{% endif %}</p>
+                        <p class="trainer-greeting-date">{% now "D, d M Y" %}</p>
+                    </div>
+                </div>
+
+                <div class="glassy-card trainer-calendar-card">
+                    <p class="trainer-calendar-title">Your training week</p>
+                    <div class="trainer-calendar-strip">
+                        {% for day in calendar_strip %}
+                            <div class="calendar-day {% if day.is_today %}active{% endif %}">
+                                <span class="calendar-day-name">{{ day.day_name }}</span>
+                                <span class="calendar-day-number">{{ day.day_number }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="trainer-layout-grid">
+                    <div class="trainer-main-column">
+                        <div class="glassy-card trainer-hero-card">
+                            <div class="trainer-hero-head">
+                                <div>
+                                    <p class="trainer-kicker">SESSION OVERVIEW</p>
+                                    <h2>{{ workout_context.today_workout }}</h2>
+                                    <p class="trainer-subtext">A focused routine mapped from your goal, fitness level, and training environment.</p>
+                                    <a href="{% url 'trainer_workout' %}" class="btn-primary btn-small">Start Today&apos;s Workout</a>
+                                </div>
+                                <div class="trainer-chip-stack">
+                                    <span>{{ profile.get_primary_goal_display }}</span>
+                                    <span>{{ profile.get_fitness_level_display }}</span>
+                                    <span>{{ profile.get_training_type_display }}</span>
+                                </div>
+                            </div>
+                            <div class="trainer-progress-row">
+                                <div>
+                                    <p class="mini-label">Session Duration</p>
+                                    <strong>{{ workout_context.duration }}</strong>
+                                </div>
+                                <div>
+                                    <p class="mini-label">Weekly Frequency</p>
+                                    <strong>{{ workout_context.frequency }}</strong>
+                                </div>
+                                <div>
+                                    <p class="mini-label">Completion Goal</p>
+                                    <strong>{{ ui_metrics.completion }}%</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <section class="trainer-workout-section" id="workout-player">
+                            <h2 class="section-title">Workout Player</h2>
+                            <p class="trainer-subtitle">One movement appears every 3 seconds. Sequence loops continuously.</p>
+
+                            <div class="workout-rotator" id="workoutRotator">
+                                {% for workout in workout_sequence %}
+                                    <article class="glassy-card workout-slide {% if forloop.first %}active{% endif %}" data-slide>
+                                        <div class="workout-visual-template">
+                                            <div class="visual-glow"></div>
+                                            <div class="visual-icon pulse">{{ workout.icon }}</div>
+                                            <div class="visual-bars">
+                                                <span></span>
+                                                <span></span>
+                                                <span></span>
+                                            </div>
+                                        </div>
+
+                                        <div class="workout-slide-content">
+                                            <p class="workout-step-label">Step {{ forloop.counter }}</p>
+                                            <h3>{{ workout.name }}</h3>
+                                            <p>{{ workout.detail }}</p>
+                                            <div class="workout-metrics">
+                                                <div class="metric-pill"><strong>Sets:</strong> {{ workout.sets }}</div>
+                                                <div class="metric-pill"><strong>Reps/Time:</strong> {{ workout.reps }}</div>
+                                                <div class="metric-pill"><strong>Rest:</strong> {{ workout.rest }}</div>
+                                            </div>
+                                            <p class="workout-instruction">Coach cue: {{ workout.instruction }}</p>
+                                        </div>
+                                    </article>
+                                {% endfor %}
+                            </div>
+
+                            <div class="rotator-dots" id="rotatorDots">
+                                {% for workout in workout_sequence %}
+                                    <button type="button" class="dot {% if forloop.first %}active{% endif %}" data-dot="{{ forloop.counter0 }}" aria-label="Show workout step {{ forloop.counter }}"></button>
+                                {% endfor %}
+                            </div>
+                        </section>
+
+                        <section id="session-timeline">
+                            <h2 class="section-title">Detailed Session Timeline</h2>
+                            <div class="workout-detail-list">
+                                {% for workout in workout_sequence %}
+                                    <div class="glassy-card workout-detail-card">
+                                        <div class="workout-detail-title">
+                                            <span class="workout-detail-number">{{ forloop.counter }}</span>
+                                            <h3>{{ workout.name }}</h3>
+                                        </div>
+                                        <p>{{ workout.detail }}</p>
+                                        <ul class="status-list">
+                                            <li>Sets: {{ workout.sets }}</li>
+                                            <li>Reps/Time: {{ workout.reps }}</li>
+                                            <li>Rest: {{ workout.rest }}</li>
+                                            <li>Coach note: {{ workout.instruction }}</li>
+                                        </ul>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </section>
+                    </div>
+
+                    <aside class="trainer-side-column">
+                        <div class="glassy-card side-metric-card">
+                            <p class="mini-label">Daily Calories</p>
+                            <h3>{{ ui_metrics.calories_target }} kcal</h3>
+                            <p class="trainer-subtext">Target intake aligned to your onboarding goal.</p>
+                        </div>
+                        <div class="glassy-card side-metric-card accent-water">
+                            <p class="mini-label">Water Intake</p>
+                            <h3>{{ ui_metrics.water_liters }} L</h3>
+                            <p class="trainer-subtext">Hydration target for session and recovery.</p>
+                        </div>
+                        <div class="glassy-card side-metric-card accent-protein">
+                            <p class="mini-label">Protein Goal</p>
+                            <h3>{{ ui_metrics.protein_g }} g</h3>
+                            <p class="trainer-subtext">Supports muscle repair and progression.</p>
+                        </div>
+                        <div class="glassy-card side-checklist-card">
+                            <h3>Today&apos;s Checklist</h3>
+                            <ul class="status-list">
+                                {% for item in today_checklist %}
+                                    <li>{{ item }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="glassy-card tracking-panel-card tracking-panel-sidebar" id="tracking-panel">
+                            <h3>Progress Tracking</h3>
+                            <p class="tracking-subtext">Metrics to monitor from your onboarding preferences.</p>
+                            <div class="tracking-list">
+                                {% for item in tracking_panel %}
+                                    <div class="tracking-item">
+                                        <div>
+                                            <p class="tracking-name">{{ item.name }}</p>
+                                            <p class="tracking-trend">{{ item.trend }}</p>
+                                        </div>
+                                        <span class="tracking-value">{{ item.value }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+    const trainerWelcomeBanner = document.getElementById('trainerWelcomeBanner');
+    const trainerGreetingText = document.getElementById('trainerGreetingText');
+    const trainerPageFrame = document.getElementById('trainerPageFrame');
+    const trainerNavPanel = document.getElementById('trainerNavPanel');
+    const trainerNavToggle = document.getElementById('trainerNavToggle');
+    const trainerNavArrow = document.getElementById('trainerNavArrow');
+    if (trainerWelcomeBanner) {
+        setTimeout(() => {
+            trainerWelcomeBanner.classList.add('hide');
+        }, 3000);
+    }
+
+    if (trainerGreetingText) {
+        const hour = new Date().getHours();
+        let greeting = 'Good Day';
+        if (hour < 12) {
+            greeting = 'Good Morning';
+        } else if (hour < 18) {
+            greeting = 'Good Afternoon';
+        } else {
+            greeting = 'Good Evening';
+        }
+        trainerGreetingText.textContent = `${greeting}{% if user_name %}, {{ user_name }}{% endif %}`;
+    }
+
+    const workoutSlides = Array.from(document.querySelectorAll('[data-slide]'));
+    const rotatorDots = Array.from(document.querySelectorAll('[data-dot]'));
+    let currentSlide = 0;
+
+    function showSlide(index) {
+        workoutSlides.forEach((slide, idx) => {
+            slide.classList.toggle('active', idx === index);
+        });
+        rotatorDots.forEach((dot, idx) => {
+            dot.classList.toggle('active', idx === index);
+        });
+    }
+
+    rotatorDots.forEach((dot) => {
+        dot.addEventListener('click', () => {
+            currentSlide = Number(dot.dataset.dot);
+            showSlide(currentSlide);
+        });
+    });
+
+    if (workoutSlides.length > 1) {
+        setInterval(() => {
+            currentSlide = (currentSlide + 1) % workoutSlides.length;
+            showSlide(currentSlide);
+        }, 3000);
+    }
+
+    if (trainerPageFrame && trainerNavPanel && trainerNavToggle && trainerNavArrow) {
+        const navStorageKey = 'trainerNavCollapsed';
+        const setArrowState = () => {
+            const collapsed = trainerPageFrame.classList.contains('nav-collapsed');
+            trainerNavArrow.textContent = collapsed ? '▶' : '◀';
+            trainerNavToggle.setAttribute('aria-label', collapsed ? 'Expand menu' : 'Collapse menu');
+        };
+
+        if (localStorage.getItem(navStorageKey) === 'true') {
+            trainerPageFrame.classList.add('nav-collapsed');
+        }
+        setArrowState();
+
+        trainerNavToggle.addEventListener('click', () => {
+            trainerPageFrame.classList.toggle('nav-collapsed');
+            localStorage.setItem(navStorageKey, trainerPageFrame.classList.contains('nav-collapsed') ? 'true' : 'false');
+            setArrowState();
+        });
+    }
+</script>
+{% endblock %}

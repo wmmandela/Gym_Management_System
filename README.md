@@ -103,7 +103,7 @@ App URLs:
 
 ## Core App Flows
 1. Sign up
-2. Complete onboarding (includes plan selection: GetFit Strength Pro / GetFit Cardio Plus / GetFit Flow Studio)
+2. Complete onboarding (includes plan selection: Basic / Pro / Elite)
 3. Choose trainer where required
 4. Build timetable
 5. Use dashboard, workout flow, and meal timetable planner

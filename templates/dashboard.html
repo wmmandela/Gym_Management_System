@@ -58,11 +58,11 @@
                 {% if profile and profile.recommendations %}
                     <p class="dashboard-hero-copy">{{ profile.recommendations }}</p>
                     {% if profile.gym_access == 'private' %}
-                        <p class="dashboard-hero-copy"><strong>Access:</strong> GetFit Flow Studio</p>
+                        <p class="dashboard-hero-copy"><strong>Access:</strong> Elite</p>
                     {% elif profile.gym_access == 'commercial' %}
-                        <p class="dashboard-hero-copy"><strong>Access:</strong> GetFit Cardio Plus</p>
+                        <p class="dashboard-hero-copy"><strong>Access:</strong> Pro</p>
                     {% elif profile.gym_access == 'no_access' %}
-                        <p class="dashboard-hero-copy"><strong>Access:</strong> GetFit Strength Pro</p>
+                        <p class="dashboard-hero-copy"><strong>Access:</strong> Basic</p>
                     {% endif %}
                 {% else %}
                     <p class="dashboard-hero-copy">Complete onboarding to unlock your personalized plan.</p>
@@ -97,11 +97,11 @@
             <div class="glassy-card status-card compact-card hover-lift">
                 <h3>Access</h3>
                 {% if profile and profile.gym_access == 'private' %}
-                    <p>GetFit Flow Studio</p>
+                    <p>Elite</p>
                 {% elif profile and profile.gym_access == 'commercial' %}
-                    <p>GetFit Cardio Plus</p>
+                    <p>Pro</p>
                 {% elif profile and profile.gym_access == 'no_access' %}
-                    <p>GetFit Strength Pro</p>
+                    <p>Basic</p>
                 {% else %}
                     <p>Not selected</p>
                 {% endif %}

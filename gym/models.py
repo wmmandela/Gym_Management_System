@@ -73,9 +73,9 @@ class MemberProfile(models.Model):
     ]
 
     GYM_ACCESS_CHOICES = [
-        ('no_access', 'GetFit Strength Pro'),
-        ('commercial', 'GetFit Cardio Plus'),
-        ('private', 'GetFit Flow Studio'),
+        ('no_access', 'Basic'),
+        ('commercial', 'Pro'),
+        ('private', 'Elite'),
     ]
 
     COACHING_CHOICES = [

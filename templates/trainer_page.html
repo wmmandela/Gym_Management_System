@@ -90,11 +90,11 @@
                                     <span>{{ profile.get_fitness_level_display }}</span>
                                     <span>{{ profile.get_training_type_display }}</span>
                                     {% if profile.gym_access == 'private' %}
-                                        <span>GetFit Flow Studio</span>
+                                        <span>Elite</span>
                                     {% elif profile.gym_access == 'commercial' %}
-                                        <span>GetFit Cardio Plus</span>
+                                        <span>Pro</span>
                                     {% elif profile.gym_access == 'no_access' %}
-                                        <span>GetFit Strength Pro</span>
+                                        <span>Basic</span>
                                     {% endif %}
                                 </div>
                             </div>

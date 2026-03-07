@@ -539,7 +539,7 @@ def onboarding(request):
         if gym_access not in {'no_access', 'commercial', 'private'}:
             messages.error(
                 request,
-                'Please choose a plan: GetFit Strength Pro, GetFit Cardio Plus, or GetFit Flow Studio.',
+                'Please choose a plan: Basic, Pro, or Elite.',
             )
             return render(request, 'onboarding.html', {'access_value': access_value})
         coaching_from_program = {

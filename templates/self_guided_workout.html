@@ -63,7 +63,7 @@
                         <li><strong>Goal:</strong> {{ workout_context.focus }}</li>
                         <li><strong>Level:</strong> {{ workout_context.level }}</li>
                         <li><strong>Mode:</strong> {{ workout_context.coaching }}</li>
-                        <li><strong>Access:</strong> {% if profile.gym_access == 'private' %}GetFit Flow Studio{% elif profile.gym_access == 'commercial' %}GetFit Cardio Plus{% elif profile.gym_access == 'no_access' %}GetFit Strength Pro{% else %}Not selected{% endif %}</li>
+                        <li><strong>Access:</strong> {% if profile.gym_access == 'private' %}Elite{% elif profile.gym_access == 'commercial' %}Pro{% elif profile.gym_access == 'no_access' %}Basic{% else %}Not selected{% endif %}</li>
                         <li><strong>Duration:</strong> {{ workout_context.estimated_duration }}</li>
                         <li><strong>Calories:</strong> ~{{ workout_context.estimated_calories }} kcal</li>
                     </ul>

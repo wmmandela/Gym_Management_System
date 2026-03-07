@@ -103,7 +103,7 @@ App URLs:
 
 ## Core App Flows
 1. Sign up
-2. Complete onboarding (includes access level: Standard/Premium)
+2. Complete onboarding (includes plan selection: GetFit Strength Pro / GetFit Cardio Plus / GetFit Flow Studio)
 3. Choose trainer where required
 4. Build timetable
 5. Use dashboard, workout flow, and meal timetable planner
@@ -180,4 +180,3 @@ Ensure Vercel routes and static build config are present in `vercel.json`.
 - Avoid committing secrets or real DB credentials.
 - Keep migrations committed with model changes.
 - Run `python manage.py check` before push.
-

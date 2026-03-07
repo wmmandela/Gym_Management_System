@@ -536,8 +536,11 @@ def onboarding(request):
         program_type = request.POST.get('program_type') or 'individual'
         gym_access = (request.POST.get('gym_access') or '').strip()
         access_value = gym_access
-        if gym_access not in {'commercial', 'private'}:
-            messages.error(request, 'Please choose either Standard or Premium access.')
+        if gym_access not in {'no_access', 'commercial', 'private'}:
+            messages.error(
+                request,
+                'Please choose a plan: GetFit Strength Pro, GetFit Cardio Plus, or GetFit Flow Studio.',
+            )
             return render(request, 'onboarding.html', {'access_value': access_value})
         coaching_from_program = {
             'personal_trainer': 'yes',

@@ -10,8 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
-from pathlib import Path
 import os
+from pathlib import Path
+from urllib.parse import parse_qs, unquote, urlparse
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -21,12 +22,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-c&to4+3quy779-78f9dv3b&-ry6qpzf&mj1m(1=7o)6vw%m4c7'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-c&to4+3quy779-78f9dv3b&-ry6qpzf&mj1m(1=7o)6vw%m4c7')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False').strip().lower() == 'true'
 
-ALLOWED_HOSTS = []
+default_hosts = ['127.0.0.1', 'localhost', '.vercel.app']
+env_hosts = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '').split(',') if h.strip()]
+ALLOWED_HOSTS = env_hosts or default_hosts
 
 
 # Application definition
@@ -74,16 +77,39 @@ WSGI_APPLICATION = 'gym_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'gym_project'),
-        'USER': os.getenv('POSTGRES_USER', 'gym_user'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'gym_password'),
-        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+postgres_url = os.getenv('POSTGRES_URL') or os.getenv('DATABASE_URL')
+if postgres_url:
+    parsed = urlparse(postgres_url)
+    query_params = parse_qs(parsed.query)
+    db_options = {}
+    if 'sslmode' in query_params and query_params['sslmode']:
+        db_options['sslmode'] = query_params['sslmode'][0]
+    if 'connect_timeout' in query_params and query_params['connect_timeout']:
+        db_options['connect_timeout'] = query_params['connect_timeout'][0]
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': parsed.path.lstrip('/'),
+            'USER': unquote(parsed.username or ''),
+            'PASSWORD': unquote(parsed.password or ''),
+            'HOST': parsed.hostname or 'localhost',
+            'PORT': str(parsed.port or 5432),
+            'CONN_MAX_AGE': int(os.getenv('POSTGRES_CONN_MAX_AGE', '60')),
+            'OPTIONS': db_options,
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB') or os.getenv('POSTGRES_DATABASE', 'gym_project'),
+            'USER': os.getenv('POSTGRES_USER', 'macheraweine'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+            'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+            'CONN_MAX_AGE': int(os.getenv('POSTGRES_CONN_MAX_AGE', '60')),
+        }
+    }
 
 
 # Password validation
@@ -122,3 +148,10 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+csrf_env = [o.strip() for o in os.getenv('CSRF_TRUSTED_ORIGINS', '').split(',') if o.strip()]
+if csrf_env:
+    CSRF_TRUSTED_ORIGINS = csrf_env
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

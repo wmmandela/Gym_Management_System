@@ -52,6 +52,7 @@
                     <button type="button" class="btn-primary" id="startPauseBtn">Start</button>
                     <button type="button" class="btn-secondary btn-small" id="nextBtn">Next</button>
                     <button type="button" class="btn-secondary btn-small" id="resetBtn">Reset</button>
+                    <button type="button" class="btn-primary" id="doneBtn" style="display:none;">Done</button>
                 </div>
             </article>
 
@@ -62,6 +63,7 @@
                         <li><strong>Goal:</strong> {{ workout_context.focus }}</li>
                         <li><strong>Level:</strong> {{ workout_context.level }}</li>
                         <li><strong>Mode:</strong> {{ workout_context.coaching }}</li>
+                        <li><strong>Access:</strong> {% if profile.gym_access == 'private' %}Premium{% elif profile.gym_access == 'commercial' %}Standard{% else %}Not selected{% endif %}</li>
                         <li><strong>Duration:</strong> {{ workout_context.estimated_duration }}</li>
                         <li><strong>Calories:</strong> ~{{ workout_context.estimated_calories }} kcal</li>
                     </ul>
@@ -114,6 +116,7 @@
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
         const resetBtn = document.getElementById('resetBtn');
+        const doneBtn = document.getElementById('doneBtn');
 
         let index = 0;
         let phase = 'exercise';
@@ -122,6 +125,7 @@
         let startLogged = false;
         let completeLogged = false;
         let timerId = null;
+        let doneRedirectUrl = completeRedirectUrl;
 
         const getCsrfToken = () => {
             const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
@@ -156,6 +160,15 @@
             const m = Math.floor(seconds / 60).toString().padStart(2, '0');
             const s = Math.max(0, seconds % 60).toString().padStart(2, '0');
             return `${m}:${s}`;
+        };
+
+        const resolveDoneRedirectUrl = () => {
+            const ref = document.referrer || '';
+            const sameOriginRef = ref.startsWith(window.location.origin);
+            if (sameOriginRef && ref.includes('/dashboard/')) {
+                return ref;
+            }
+            return completeRedirectUrl;
         };
 
         const demoClassMap = {
@@ -199,7 +212,7 @@
 
             exerciseName.textContent = current.name;
             exerciseInstruction.textContent = current.instruction;
-            phaseBadge.textContent = phase === 'exercise' ? 'Exercise' : 'Break';
+            phaseBadge.textContent = phase === 'exercise' ? 'Exercise' : 'Rest';
             stepCounter.textContent = `Step ${index + 1} of ${sequence.length}`;
             timerDisplay.textContent = formatTime(remaining);
             exerciseProgressFill.style.width = `${pct}%`;
@@ -235,7 +248,7 @@
                 remaining -= 1;
                 if (remaining <= 0) {
                     const current = sequence[index];
-                    if (phase === 'exercise' && Number(current.break_sec || 0) > 0 && index < sequence.length) {
+                    if (phase === 'exercise' && Number(current.break_sec || 0) > 0) {
                         phase = 'break';
                         remaining = Number(current.break_sec || 20);
                     } else if (index < sequence.length - 1) {
@@ -251,8 +264,10 @@
                         phaseBadge.textContent = 'Complete';
                         timerDisplay.textContent = '00:00';
                         exerciseProgressFill.style.width = '100%';
-                        startPauseBtn.textContent = 'Completed - Back to Dashboard';
-                        startPauseBtn.disabled = false;
+                        startPauseBtn.textContent = 'Completed';
+                        startPauseBtn.disabled = true;
+                        doneRedirectUrl = resolveDoneRedirectUrl();
+                        doneBtn.style.display = 'inline-flex';
                         return;
                     }
                 }
@@ -269,14 +284,11 @@
             completeLogged = false;
             startPauseBtn.disabled = false;
             startPauseBtn.textContent = 'Start';
+            doneBtn.style.display = 'none';
             renderCurrent();
         };
 
         startPauseBtn.addEventListener('click', () => {
-            if (completeLogged && !running && completeRedirectUrl) {
-                window.location.href = completeRedirectUrl;
-                return;
-            }
             if (running) pause();
             else start();
         });
@@ -295,6 +307,11 @@
             renderCurrent();
         });
         resetBtn.addEventListener('click', resetWorkout);
+        doneBtn.addEventListener('click', () => {
+            if (doneRedirectUrl) {
+                window.location.href = doneRedirectUrl;
+            }
+        });
 
         renderCurrent();
     })();

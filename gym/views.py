@@ -52,7 +52,7 @@ TRAINER_CATALOG = [
 
 
 def home(request):
-    return render(request, 'home.html')
+    return render(request, 'home.html', {'category_counts': _build_home_category_counts()})
 
 
 def contact_submit(request):
@@ -81,14 +81,18 @@ def signin(request):
             messages.error(request, 'Please enter your email and password.')
             return render(request, 'signin.html')
 
-        user = User.objects.filter(email=email).first()
-        if not user:
-            messages.error(request, 'No account found for that email.')
-            return render(request, 'signin.html')
+        try:
+            user = User.objects.filter(email=email).first()
+            if not user:
+                messages.error(request, 'No account found for that email.')
+                return render(request, 'signin.html')
 
-        user = authenticate(request, username=user.username, password=password)
-        if not user:
-            messages.error(request, 'Invalid credentials.')
+            user = authenticate(request, username=user.username, password=password)
+            if not user:
+                messages.error(request, 'Invalid credentials.')
+                return render(request, 'signin.html')
+        except DatabaseError:
+            messages.error(request, 'Service is temporarily unavailable. Please try again shortly.')
             return render(request, 'signin.html')
 
         login(request, user)
@@ -116,15 +120,19 @@ def signup(request):
             messages.error(request, 'Please fill out all required fields.')
             return render(request, 'signup.html')
 
-        if User.objects.filter(email=email).exists():
-            messages.error(request, 'An account with that email already exists.')
-            return render(request, 'signup.html')
+        try:
+            if User.objects.filter(email=email).exists():
+                messages.error(request, 'An account with that email already exists.')
+                return render(request, 'signup.html')
 
-        username = email
-        user = User.objects.create_user(username=username, email=email, password=password)
-        user.first_name = name.split(' ')[0]
-        user.last_name = ' '.join(name.split(' ')[1:]) if len(name.split(' ')) > 1 else ''
-        user.save()
+            username = email
+            user = User.objects.create_user(username=username, email=email, password=password)
+            user.first_name = name.split(' ')[0]
+            user.last_name = ' '.join(name.split(' ')[1:]) if len(name.split(' ')) > 1 else ''
+            user.save()
+        except DatabaseError:
+            messages.error(request, 'Service is temporarily unavailable. Please try again shortly.')
+            return render(request, 'signup.html')
 
         login(request, user)
         request.session['registered_name'] = name
@@ -140,7 +148,11 @@ def dashboard(request):
         messages.info(request, 'Please sign in to access your dashboard.')
         return redirect('signin')
 
-    profile = MemberProfile.objects.filter(user=request.user).first()
+    try:
+        profile = MemberProfile.objects.filter(user=request.user).first()
+    except DatabaseError:
+        messages.error(request, 'Service is temporarily unavailable. Please try again shortly.')
+        return redirect('home')
     if not profile or not profile.onboarding_complete:
         return _render_dashboard(request, profile=profile, dashboard_variant='generic')
     if profile.program_type in {'personal_trainer', 'hybrid'} and not profile.assigned_trainer:
@@ -188,15 +200,17 @@ def trainer_page(request):
     workout_context = _build_trainer_page_workout(profile)
     workout_sequence = _build_workout_sequence(profile)
     ui_metrics = _build_ui_metrics(profile)
+    progress_metrics = _build_progress_metrics(profile)
     today_checklist = _build_today_checklist(profile)
     calendar_strip = _build_calendar_strip()
-    tracking_panel = _build_tracking_panel(profile, ui_metrics)
+    tracking_panel = _build_tracking_panel(profile, ui_metrics, progress_metrics)
     context = {
         'user_name': request.user.first_name or request.user.username,
         'profile': profile,
         'workout_context': workout_context,
         'workout_sequence': workout_sequence,
         'ui_metrics': ui_metrics,
+        'progress_metrics_url': reverse('progress_metrics_api'),
         'today_checklist': today_checklist,
         'calendar_strip': calendar_strip,
         'tracking_panel': tracking_panel,
@@ -514,63 +528,74 @@ def onboarding(request):
         messages.info(request, 'Please sign up before onboarding.')
         return redirect('signup')
 
+    access_value = ''
+
     if request.method == 'POST':
         secondary_goals = request.POST.getlist('secondary_goals')
         tracking_metrics = request.POST.getlist('tracking_metrics')
         program_type = request.POST.get('program_type') or 'individual'
+        gym_access = (request.POST.get('gym_access') or '').strip()
+        access_value = gym_access
+        if gym_access not in {'commercial', 'private'}:
+            messages.error(request, 'Please choose either Standard or Premium access.')
+            return render(request, 'onboarding.html', {'access_value': access_value})
         coaching_from_program = {
             'personal_trainer': 'yes',
             'individual': 'no',
             'hybrid': 'maybe',
         }
 
-        profile, _ = MemberProfile.objects.update_or_create(
-            user=request.user,
-            defaults={
-                'name': request.session.get('registered_name', request.user.get_full_name() or request.user.username),
-                'email': request.user.email,
-                'phone': request.session.get('registered_phone', ''),
-                'age': request.POST.get('age') or None,
-                'gender': request.POST.get('gender') or '',
-                'height_cm': request.POST.get('height_cm') or None,
-                'weight_kg': request.POST.get('weight_kg') or None,
-                'fitness_level': request.POST.get('fitness_level') or '',
-                'training_experience': request.POST.get('training_experience') or '',
-                'health_considerations': request.POST.get('health_considerations') or '',
-                'primary_goal': request.POST.get('primary_goal') or '',
-                'secondary_goals': ','.join(secondary_goals),
-                'target_weight_kg': request.POST.get('target_weight_kg') or None,
-                'goal_timeframe': request.POST.get('goal_timeframe') or '',
-                'training_type': request.POST.get('training_type') or '',
-                'workout_frequency': request.POST.get('workout_frequency') or '',
-                'workout_duration': request.POST.get('workout_duration') or '',
-                'training_time': request.POST.get('training_time') or '',
-                'equipment_home': request.POST.get('equipment_home') or '',
-                'gym_access': request.POST.get('gym_access') or '',
-                'personal_coaching': coaching_from_program.get(program_type, 'no'),
-                'program_type': program_type,
-                'coaching_style': request.POST.get('coaching_style') or '',
-                'instructor_preference': request.POST.get('instructor_preference') or '',
-                'tracking_metrics': ','.join(tracking_metrics),
-                'progress_check_frequency': request.POST.get('progress_check_frequency') or '',
-                'commitment_level': request.POST.get('commitment_level') or '',
-                'consent_acknowledged': True if request.POST.get('consent_acknowledged') else False,
-                'onboarding_complete': True,
-                'recommendations': _build_recommendations(
-                    request.POST.get('primary_goal'),
-                    request.POST.get('training_type'),
-                    request.POST.get('workout_frequency'),
-                    program_type,
-                ),
-            },
-        )
-
-        if not WorkoutPlan.objects.filter(user=request.user).exists():
-            WorkoutPlan.objects.create(
+        try:
+            profile, _ = MemberProfile.objects.update_or_create(
                 user=request.user,
-                title='Starter Plan',
-                summary=profile.recommendations or 'Balanced training mix for your first month.',
+                defaults={
+                    'name': request.session.get('registered_name', request.user.get_full_name() or request.user.username),
+                    'email': request.user.email,
+                    'phone': request.session.get('registered_phone', ''),
+                    'age': request.POST.get('age') or None,
+                    'gender': request.POST.get('gender') or '',
+                    'height_cm': request.POST.get('height_cm') or None,
+                    'weight_kg': request.POST.get('weight_kg') or None,
+                    'fitness_level': request.POST.get('fitness_level') or '',
+                    'training_experience': request.POST.get('training_experience') or '',
+                    'health_considerations': request.POST.get('health_considerations') or '',
+                    'primary_goal': request.POST.get('primary_goal') or '',
+                    'secondary_goals': ','.join(secondary_goals),
+                    'target_weight_kg': request.POST.get('target_weight_kg') or None,
+                    'goal_timeframe': request.POST.get('goal_timeframe') or '',
+                    'training_type': request.POST.get('training_type') or '',
+                    'workout_frequency': request.POST.get('workout_frequency') or '',
+                    'workout_duration': request.POST.get('workout_duration') or '',
+                    'training_time': request.POST.get('training_time') or '',
+                    'equipment_home': request.POST.get('equipment_home') or '',
+                    'gym_access': gym_access,
+                    'personal_coaching': coaching_from_program.get(program_type, 'no'),
+                    'program_type': program_type,
+                    'coaching_style': request.POST.get('coaching_style') or '',
+                    'instructor_preference': request.POST.get('instructor_preference') or '',
+                    'tracking_metrics': ','.join(tracking_metrics),
+                    'progress_check_frequency': request.POST.get('progress_check_frequency') or '',
+                    'commitment_level': request.POST.get('commitment_level') or '',
+                    'consent_acknowledged': True if request.POST.get('consent_acknowledged') else False,
+                    'onboarding_complete': True,
+                    'recommendations': _build_recommendations(
+                        request.POST.get('primary_goal'),
+                        request.POST.get('training_type'),
+                        request.POST.get('workout_frequency'),
+                        program_type,
+                    ),
+                },
             )
+
+            if not WorkoutPlan.objects.filter(user=request.user).exists():
+                WorkoutPlan.objects.create(
+                    user=request.user,
+                    title='Starter Plan',
+                    summary=profile.recommendations or 'Balanced training mix for your first month.',
+                )
+        except DatabaseError:
+            messages.error(request, 'Could not save onboarding right now. Please try again.')
+            return render(request, 'onboarding.html', {'access_value': access_value})
         try:
             MealTimetablePlan.objects.get_or_create(
                 user=request.user,
@@ -583,7 +608,7 @@ def onboarding(request):
             return redirect('initial_trainer_selection')
         return redirect('timetable_planner')
 
-    return render(request, 'onboarding.html')
+    return render(request, 'onboarding.html', {'access_value': access_value})
 
 
 def _require_profile(request):
@@ -591,7 +616,11 @@ def _require_profile(request):
         messages.info(request, 'Please sign in to access your dashboard.')
         return None
 
-    profile = MemberProfile.objects.filter(user=request.user).first()
+    try:
+        profile = MemberProfile.objects.filter(user=request.user).first()
+    except DatabaseError:
+        messages.error(request, 'Service is temporarily unavailable. Please try again shortly.')
+        return None
     if not profile or not profile.onboarding_complete:
         messages.info(request, 'Please complete onboarding first.')
         return None
@@ -599,7 +628,13 @@ def _require_profile(request):
 
 
 def _render_dashboard(request, profile, dashboard_variant, trainer_recommendations=None, exercise_plan=None):
-    plans = WorkoutPlan.objects.filter(user=request.user).order_by('-created_at')[:3] if request.user.is_authenticated else []
+    if request.user.is_authenticated:
+        try:
+            plans = WorkoutPlan.objects.filter(user=request.user).order_by('-created_at')[:3]
+        except DatabaseError:
+            plans = []
+    else:
+        plans = []
     progress_metrics = _build_progress_metrics(profile) if profile else _empty_progress_metrics(profile)
     individual_home_panel = {}
     variant_panel = {}
@@ -682,8 +717,7 @@ def timetable_planner(request):
         schedule = _default_timetable_schedule(profile)
         messages.error(
             request,
-            'Database connection for timetable is currently unavailable. '
-            'Please run migrations/check PostgreSQL, then try again.'
+            'Timetable is temporarily unavailable. Please try again shortly.'
         )
 
     if request.method == 'POST':
@@ -709,11 +743,10 @@ def timetable_planner(request):
             except DatabaseError:
                 messages.error(
                     request,
-                    'Could not save timetable due to a database error. '
-                    'Please check PostgreSQL connection and migrations.'
+                    'Could not save timetable right now. Please try again shortly.'
                 )
         else:
-            messages.error(request, 'Timetable cannot be saved until database access is restored.')
+            messages.error(request, 'Timetable cannot be saved right now. Please try again shortly.')
 
     context = {
         'profile': profile,
@@ -742,8 +775,7 @@ def meal_timetable_planner(request):
         schedule = _default_meal_timetable_schedule(profile)
         messages.error(
             request,
-            'Database connection for meal timetable is currently unavailable. '
-            'Please run migrations/check PostgreSQL, then try again.'
+            'Meal timetable is temporarily unavailable. Please try again shortly.'
         )
 
     if request.method == 'POST':
@@ -771,11 +803,10 @@ def meal_timetable_planner(request):
             except DatabaseError:
                 messages.error(
                     request,
-                    'Could not save meal timetable due to a database error. '
-                    'Please check PostgreSQL connection and migrations.'
+                    'Could not save meal timetable right now. Please try again shortly.'
                 )
         else:
-            messages.error(request, 'Meal timetable cannot be saved until database access is restored.')
+            messages.error(request, 'Meal timetable cannot be saved right now. Please try again shortly.')
 
     context = {
         'profile': profile,
@@ -820,6 +851,44 @@ def _build_recommendations(primary_goal, training_type, workout_frequency, progr
             program_map.get(program_type, 'Structured plan selected.'),
         ]
     )
+
+
+def _build_home_category_counts():
+    defaults = {
+        'weight_training_programs': 24,
+        'yoga_classes': 18,
+        'cardio_programs': 32,
+        'spinning_classes': 12,
+        'crossfit_programs': 8,
+        'swimming_programs': 6,
+        'nutrition_plans': 15,
+        'personal_trainers': 45,
+    }
+    try:
+        workout_plan_count = WorkoutPlan.objects.count()
+        timetable_count = TimetablePlan.objects.count()
+        meal_timetable_count = MealTimetablePlan.objects.count()
+        distinct_trainers = (
+            MemberProfile.objects.exclude(assigned_trainer__isnull=True)
+            .exclude(assigned_trainer='')
+            .values('assigned_trainer')
+            .distinct()
+            .count()
+        )
+        member_profiles = MemberProfile.objects.count()
+
+        return {
+            'weight_training_programs': max(workout_plan_count, member_profiles),
+            'yoga_classes': max(timetable_count, member_profiles // 2),
+            'cardio_programs': max(workout_plan_count, timetable_count),
+            'spinning_classes': max(timetable_count // 2, 0),
+            'crossfit_programs': max(workout_plan_count // 2, 0),
+            'swimming_programs': max(timetable_count // 3, 0),
+            'nutrition_plans': max(meal_timetable_count, 0),
+            'personal_trainers': max(distinct_trainers, 0),
+        }
+    except DatabaseError:
+        return defaults
 
 
 def _recommend_trainers(profile):
@@ -897,9 +966,6 @@ def _build_exercise_recommendations(profile):
     focus = goal_map.get(profile.primary_goal, goal_map['general_fitness'])
     home_exercises = list(focus['home']) + equipment_bonus.get(profile.equipment_home, [])
     gym_exercises = list(focus['gym'])
-
-    if profile.gym_access == 'no_access':
-        gym_exercises = ['No gym access selected. Use home-focused sessions this week.']
 
     plan_summary = f"{profile.get_workout_frequency_display()} at {profile.get_workout_duration_display()}"
 
@@ -1063,7 +1129,7 @@ def _build_calendar_strip():
     return days
 
 
-def _build_tracking_panel(profile, ui_metrics):
+def _build_tracking_panel(profile, ui_metrics, progress_metrics):
     label_map = {
         'weight': 'Weight',
         'measurements': 'Body measurements',
@@ -1086,11 +1152,33 @@ def _build_tracking_panel(profile, ui_metrics):
         elif label == 'Body measurements':
             tracking_items.append({'name': label, 'value': 'Waist/hip check', 'trend': 'Update every 2 weeks'})
         elif label == 'Workout completion':
-            tracking_items.append({'name': label, 'value': f"{ui_metrics['completion']}%", 'trend': 'Weekly consistency target'})
+            tracking_items.append(
+                {
+                    'name': label,
+                    'value': f"{progress_metrics['consistency_percent']}%",
+                    'value_key': 'consistency_display',
+                    'trend': f"{progress_metrics['workouts_this_week']}/{progress_metrics['goal_sessions']} this week",
+                    'trend_key': 'weekly_completion_display',
+                }
+            )
         elif label == 'Strength progression':
-            tracking_items.append({'name': label, 'value': 'Load + reps log', 'trend': 'Progressive overload active'})
+            tracking_items.append(
+                {
+                    'name': label,
+                    'value': f"{progress_metrics['minutes_this_month']} mins",
+                    'value_key': 'minutes_this_month_display',
+                    'trend': f"{progress_metrics['workouts_total']} completed",
+                    'trend_key': 'summary_display',
+                }
+            )
 
-    tracking_items.append({'name': 'Hydration', 'value': f"{ui_metrics['water_liters']} L", 'trend': 'Daily goal'})
+    tracking_items.append(
+        {
+            'name': 'Hydration',
+            'value': f"{ui_metrics['water_liters']} L",
+            'trend': 'Daily goal',
+        }
+    )
     return tracking_items
 
 
@@ -1189,10 +1277,10 @@ def _build_individual_home_panel(profile, plans, progress_metrics, timetable_sch
         'weekly_completion': f"{completed_or_today}/{goal_sessions} This Week",
         'weekly_completion_pct': min(100, int((completed_or_today / max(1, goal_sessions)) * 100)),
         'snapshot_cards': [
-            {'title': 'Workouts This Week', 'icon': '✅', 'value': f"{completed_sessions}/{goal_sessions}", 'metric_key': 'workouts_this_week_display', 'trend': f"{progress_metrics['workouts_total']} total", 'trend_key': 'workouts_total_trend', 'trend_dir': 'up', 'subtitle': 'From database records'},
-            {'title': 'Calories Burned', 'icon': '🔥', 'value': f"{calories_burned} kcal", 'metric_key': 'calories_this_week_display', 'trend': f"{progress_metrics['calories_total']} total", 'trend_key': 'calories_total_trend', 'trend_dir': 'up', 'subtitle': 'From database records'},
+            {'title': 'Workouts This Week', 'icon': '✅', 'value': f"{completed_sessions}/{goal_sessions}", 'metric_key': 'workouts_this_week_display', 'trend': f"{progress_metrics['workouts_total']} total", 'trend_key': 'workouts_total_trend', 'trend_dir': 'up', 'subtitle': 'Weekly overview'},
+            {'title': 'Calories Burned', 'icon': '🔥', 'value': f"{calories_burned} kcal", 'metric_key': 'calories_this_week_display', 'trend': f"{progress_metrics['calories_total']} total", 'trend_key': 'calories_total_trend', 'trend_dir': 'up', 'subtitle': 'Weekly overview'},
             {'title': 'Weight Change', 'icon': '⚖️', 'value': weight_change, 'trend': '-0.3 kg', 'trend_dir': 'down', 'subtitle': 'Compared to last week'},
-            {'title': 'Consistency', 'icon': '📈', 'value': f"{completion_pct}%", 'metric_key': 'consistency_display', 'trend': f"{progress_metrics['sessions_started_total']} sessions started", 'trend_key': 'sessions_started_trend', 'trend_dir': 'up', 'subtitle': 'From database records'},
+            {'title': 'Consistency', 'icon': '📈', 'value': f"{completion_pct}%", 'metric_key': 'consistency_display', 'trend': f"{progress_metrics['sessions_started_total']} sessions started", 'trend_key': 'sessions_started_trend', 'trend_dir': 'up', 'subtitle': 'Current status'},
         ],
         'quick_actions': [
             {'label': 'View Full Plan', 'icon': '📋'},
@@ -1254,10 +1342,10 @@ def _build_dashboard_variant_panel(profile, dashboard_variant, progress_metrics,
         'action_url': action_url,
         'action_label': action_map.get(dashboard_variant, 'Start Workout'),
         'snapshot_cards': [
-            {'title': 'Workouts This Week', 'icon': '✅', 'value': f"{completed}/{goal_sessions}", 'metric_key': 'workouts_this_week_display', 'trend': f"{progress_metrics['workouts_total']} total", 'trend_key': 'workouts_total_trend', 'trend_dir': 'up', 'subtitle': 'From database records'},
+            {'title': 'Workouts This Week', 'icon': '✅', 'value': f"{completed}/{goal_sessions}", 'metric_key': 'workouts_this_week_display', 'trend': f"{progress_metrics['workouts_total']} total", 'trend_key': 'workouts_total_trend', 'trend_dir': 'up', 'subtitle': 'Weekly overview'},
             {'title': 'Focus Goal', 'icon': '🎯', 'value': profile.get_primary_goal_display(), 'trend': 'On track', 'trend_dir': 'up', 'subtitle': 'Current cycle'},
             {'title': 'Level', 'icon': '📊', 'value': profile.get_fitness_level_display(), 'trend': 'Stable', 'trend_dir': 'up', 'subtitle': 'Current status'},
-            {'title': 'Consistency', 'icon': '📈', 'value': f"{completion_pct}%", 'metric_key': 'consistency_display', 'trend': f"{progress_metrics['minutes_total']} mins total", 'trend_key': 'minutes_total_trend', 'trend_dir': 'up', 'subtitle': 'From database records'},
+            {'title': 'Consistency', 'icon': '📈', 'value': f"{completion_pct}%", 'metric_key': 'consistency_display', 'trend': f"{progress_metrics['minutes_total']} mins total", 'trend_key': 'minutes_total_trend', 'trend_dir': 'up', 'subtitle': 'Current status'},
         ],
         'quick_actions': [
             {'label': 'View Full Plan', 'icon': '📋'},
@@ -1420,7 +1508,7 @@ def _default_timetable_schedule(profile):
                 location = 'Gym' if idx % 2 == 0 else 'Home'
             elif profile.program_type == 'personal_trainer':
                 coaching = 'Coach-led'
-                location = 'Gym' if profile.gym_access != 'no_access' else 'Home'
+                location = 'Gym'
             else:
                 coaching = 'Self-guided'
                 location = 'Home' if profile.training_type == 'home' else 'Gym'
@@ -1499,7 +1587,12 @@ def _default_meal_timetable_schedule(profile):
         },
     }
     template = goal_templates.get(profile.primary_goal, goal_templates['general_fitness'])
-    water_target = round(max(2.0, min(4.0, (profile.weight_kg or 70) * 0.035)), 1)
+    # profile.weight_kg may be a string right after onboarding update_or_create.
+    try:
+        weight_kg = float(profile.weight_kg or 70)
+    except (TypeError, ValueError):
+        weight_kg = 70.0
+    water_target = round(max(2.0, min(4.0, weight_kg * 0.035)), 1)
 
     schedule = []
     for idx, day in enumerate(days):

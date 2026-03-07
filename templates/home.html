@@ -78,42 +78,42 @@
             <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">🏋️</div>
                 <h3>Weight Training</h3>
-                <p>24 Programs</p>
+                <p>{{ category_counts.weight_training_programs }} Programs</p>
             </a>
             <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">🧘</div>
                 <h3>Yoga</h3>
-                <p>18 Classes</p>
+                <p>{{ category_counts.yoga_classes }} Classes</p>
             </a>
             <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">🏃</div>
                 <h3>Cardio</h3>
-                <p>32 Programs</p>
+                <p>{{ category_counts.cardio_programs }} Programs</p>
             </a>
             <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">🚴</div>
                 <h3>Spinning</h3>
-                <p>12 Classes</p>
+                <p>{{ category_counts.spinning_classes }} Classes</p>
             </a>
             <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">🥊</div>
                 <h3>CrossFit</h3>
-                <p>8 Programs</p>
+                <p>{{ category_counts.crossfit_programs }} Programs</p>
             </a>
             <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">🏊</div>
                 <h3>Swimming</h3>
-                <p>6 Programs</p>
+                <p>{{ category_counts.swimming_programs }} Programs</p>
             </a>
             <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">🥗</div>
                 <h3>Nutrition</h3>
-                <p>15 Plans</p>
+                <p>{{ category_counts.nutrition_plans }} Plans</p>
             </a>
             <a href="{% if request.user.is_authenticated %}{% url 'onboarding' %}{% else %}{% url 'signup' %}{% endif %}" class="category-card">
                 <div class="category-icon">👨‍🏫</div>
                 <h3>Personal Training</h3>
-                <p>45 Trainers</p>
+                <p>{{ category_counts.personal_trainers }} Trainers</p>
             </a>
         </div>
     </div>

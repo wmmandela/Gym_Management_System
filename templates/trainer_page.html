@@ -89,6 +89,11 @@
                                     <span>{{ profile.get_primary_goal_display }}</span>
                                     <span>{{ profile.get_fitness_level_display }}</span>
                                     <span>{{ profile.get_training_type_display }}</span>
+                                    {% if profile.gym_access == 'private' %}
+                                        <span>Premium</span>
+                                    {% elif profile.gym_access == 'commercial' %}
+                                        <span>Standard</span>
+                                    {% endif %}
                                 </div>
                             </div>
                             <div class="trainer-progress-row">
@@ -200,9 +205,9 @@
                                     <div class="tracking-item">
                                         <div>
                                             <p class="tracking-name">{{ item.name }}</p>
-                                            <p class="tracking-trend">{{ item.trend }}</p>
+                                            <p class="tracking-trend" {% if item.trend_key %}data-progress-trend="{{ item.trend_key }}"{% endif %}>{{ item.trend }}</p>
                                         </div>
-                                        <span class="tracking-value">{{ item.value }}</span>
+                                        <span class="tracking-value" {% if item.value_key %}data-progress-value="{{ item.value_key }}"{% endif %}>{{ item.value }}</span>
                                     </div>
                                 {% endfor %}
                             </div>
@@ -286,5 +291,43 @@
             setArrowState();
         });
     }
+
+    (function () {
+        const progressUrl = "{{ progress_metrics_url }}";
+        if (!progressUrl) return;
+
+        const applyMetrics = (metrics) => {
+            if (!metrics) return;
+            document.querySelectorAll('[data-progress-value]').forEach((el) => {
+                const key = el.getAttribute('data-progress-value');
+                if (key && Object.prototype.hasOwnProperty.call(metrics, key)) {
+                    el.textContent = metrics[key];
+                }
+            });
+            document.querySelectorAll('[data-progress-trend]').forEach((el) => {
+                const key = el.getAttribute('data-progress-trend');
+                if (key && Object.prototype.hasOwnProperty.call(metrics, key)) {
+                    el.textContent = metrics[key];
+                }
+            });
+        };
+
+        const syncMetrics = async () => {
+            try {
+                const res = await fetch(progressUrl, { credentials: 'same-origin' });
+                if (!res.ok) return;
+                const data = await res.json();
+                if (data && data.ok) applyMetrics(data.metrics);
+            } catch (_) {
+                // keep page usable if polling fails
+            }
+        };
+
+        syncMetrics();
+        setInterval(syncMetrics, 15000);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) syncMetrics();
+        });
+    })();
 </script>
 {% endblock %}

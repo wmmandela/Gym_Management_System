@@ -626,10 +626,7 @@ section {
 }
 
 .trainer-page-shell {
-    background:
-        radial-gradient(circle at 10% 6%, rgba(255, 181, 122, 0.28), transparent 40%),
-        radial-gradient(circle at 90% 2%, rgba(255, 220, 189, 0.36), transparent 35%),
-        #f5efe8;
+    background: transparent;
 }
 
 .trainer-welcome-banner {
@@ -2061,6 +2058,11 @@ section {
 .app-preview-card-featured .app-preview-top,
 .app-preview-card-featured .app-mini-metrics span {
     color: #fff;
+}
+
+.app-preview-card-featured:hover {
+    background: linear-gradient(150deg, rgba(225, 137, 50, 0.9), rgba(244, 169, 96, 0.82));
+    border-color: rgba(214, 123, 32, 0.42);
 }
 
 .app-preview-top {

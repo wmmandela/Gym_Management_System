@@ -17,7 +17,7 @@
             <a href="#overview-section" class="trainer-nav-item">
                 <span class="trainer-nav-icon">🧭</span><span class="trainer-nav-label">Overview</span>
             </a>
-            <a href="#workout-arrangement-section" class="trainer-nav-item">
+            <a href="{% if dashboard_variant == 'personal_trainer' %}#trainer-program-section{% else %}#workout-arrangement-section{% endif %}" class="trainer-nav-item">
                 <span class="trainer-nav-icon">🏋️</span><span class="trainer-nav-label">Workout Plan</span>
             </a>
             <a href="#recent-details-section" class="trainer-nav-item">
@@ -26,10 +26,13 @@
             <a href="{% url 'timetable_planner' %}" class="trainer-nav-item">
                 <span class="trainer-nav-icon">🗓️</span><span class="trainer-nav-label">Change Timetable</span>
             </a>
+            <a href="#meal-plan-section" class="trainer-nav-item">
+                <span class="trainer-nav-icon">🍽️</span><span class="trainer-nav-label">Meal Plan</span>
+            </a>
             <a href="{% url 'onboarding' %}" class="trainer-nav-item">
                 <span class="trainer-nav-icon">✏️</span><span class="trainer-nav-label">Update Onboarding</span>
             </a>
-            {% if dashboard_variant == 'personal_trainer' %}
+            {% if dashboard_variant == 'personal_trainer' or dashboard_variant == 'hybrid' %}
             <a href="{% url 'trainer_page' %}" class="trainer-nav-item">
                 <span class="trainer-nav-icon">🧑‍🏫</span><span class="trainer-nav-label">Trainer Page</span>
             </a>
@@ -54,6 +57,11 @@
                 <h2>Welcome{% if user_name %}, {{ user_name }}{% endif %}</h2>
                 {% if profile and profile.recommendations %}
                     <p class="dashboard-hero-copy">{{ profile.recommendations }}</p>
+                    {% if profile.gym_access == 'private' %}
+                        <p class="dashboard-hero-copy"><strong>Access:</strong> Premium</p>
+                    {% elif profile.gym_access == 'commercial' %}
+                        <p class="dashboard-hero-copy"><strong>Access:</strong> Standard</p>
+                    {% endif %}
                 {% else %}
                     <p class="dashboard-hero-copy">Complete onboarding to unlock your personalized plan.</p>
                 {% endif %}
@@ -85,8 +93,14 @@
                 {% endif %}
             </div>
             <div class="glassy-card status-card compact-card hover-lift">
-                <h3>Recent Plans</h3>
-                <p>{% if plans %}{{ plans|length }} active{% else %}None yet{% endif %}</p>
+                <h3>Access</h3>
+                {% if profile and profile.gym_access == 'private' %}
+                    <p>Premium</p>
+                {% elif profile and profile.gym_access == 'commercial' %}
+                    <p>Standard</p>
+                {% else %}
+                    <p>Not selected</p>
+                {% endif %}
             </div>
             <div class="glassy-card status-card compact-card hover-lift">
                 {% if dashboard_variant == 'personal_trainer' and profile.assigned_trainer %}
@@ -119,7 +133,7 @@
                         <p class="home-week-progress-label" data-progress-value="weekly_completion_display">{{ variant_panel.weekly_completion }}</p>
                     </div>
                     <div class="home-hero-action">
-                        <a href="{% url 'trainer_page' %}" class="btn-primary">{{ variant_panel.action_label }}</a>
+                        <a href="{{ variant_panel.action_url|default:'#overview-section' }}" class="btn-primary">{{ variant_panel.action_label }}</a>
                     </div>
                 </div>
 
@@ -127,7 +141,7 @@
                     <h3>Weekly Plan Overview</h3>
                     <div class="home-weekly-row">
                         {% for item in variant_panel.weekly_schedule %}
-                            <a href="{% url 'timetable_planner' %}?day={{ item.day|lower }}" class="home-day-chip {{ item.status }}">
+                            <a href="{{ item.link|default:'#trainer-program-section' }}" class="home-day-chip {{ item.status }}">
                                 <span>{{ item.icon }} {{ item.day }}</span>
                                 <small>{{ item.workout }}</small>
                             </a>
@@ -151,12 +165,38 @@
                     <div class="home-actions-grid">
                         {% for action in variant_panel.quick_actions %}
                             <a
-                                href="{% if action.label == 'View Full Plan' %}#recent-details-section{% elif action.label == 'View Progress' %}#progress-snapshot-section{% elif action.label == 'Adjust Schedule' %}{% url 'timetable_planner' %}{% elif action.label == 'Change Goal' %}{% url 'onboarding' %}{% elif action.label == 'Browse Programs' %}{% url 'home' %}{% else %}#overview-section{% endif %}"
+                                href="{% if action.label == 'View Full Plan' %}#recent-details-section{% elif action.label == 'View Progress' %}#progress-snapshot-section{% elif action.label == 'Adjust Schedule' %}{% url 'timetable_planner' %}{% elif action.label == 'Meal Timetable' %}{% url 'meal_timetable_planner' %}{% elif action.label == 'Change Goal' %}{% url 'onboarding' %}{% elif action.label == 'Browse Programs' %}{% url 'home' %}{% else %}#overview-section{% endif %}"
                                 class="home-action-btn"
                             >
                                 {{ action.icon }} {{ action.label }}
                             </a>
                         {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% if meal_panel %}
+            <div class="glassy-card home-actions-card reveal" id="meal-plan-section" style="--delay: 0.3s;">
+                <h3>Meal Plan</h3>
+                <div class="dashboard-grid dashboard-grid-compact">
+                    <div class="glassy-card status-card compact-card">
+                        <h3>Today ({{ meal_panel.today.day }})</h3>
+                        <ul class="status-list">
+                            <li><strong>Breakfast:</strong> {{ meal_panel.today.breakfast }}</li>
+                            <li><strong>Lunch:</strong> {{ meal_panel.today.lunch }}</li>
+                            <li><strong>Dinner:</strong> {{ meal_panel.today.dinner }}</li>
+                            <li><strong>Snack:</strong> {{ meal_panel.today.snack }}</li>
+                        </ul>
+                    </div>
+                    <div class="glassy-card status-card compact-card">
+                        <h3>Coverage</h3>
+                        <p>{{ meal_panel.days_planned }} days planned</p>
+                        <p><strong>Hydration target:</strong> {{ meal_panel.today.water_liters }} L today</p>
+                    </div>
+                    <div class="glassy-card status-card compact-card">
+                        <h3>Actions</h3>
+                        <p>Update meals and hydration schedule for the full week.</p>
+                        <a href="{{ meal_panel.planner_url }}" class="btn-secondary btn-small">Open Meal Timetable</a>
                     </div>
                 </div>
             </div>
@@ -217,7 +257,7 @@
                     <div class="home-actions-grid">
                         {% for action in individual_home_panel.quick_actions %}
                             <a
-                                href="{% if action.label == 'View Full Plan' %}{% url 'timetable_planner' %}{% elif action.label == 'View Progress' %}#progress-snapshot-section{% elif action.label == 'Adjust Schedule' %}{% url 'timetable_planner' %}{% elif action.label == 'Change Goal' %}{% url 'onboarding' %}{% elif action.label == 'Browse Programs' %}{% url 'home' %}{% else %}#overview-section{% endif %}"
+                                href="{% if action.label == 'View Full Plan' %}{% url 'timetable_planner' %}{% elif action.label == 'View Progress' %}#progress-snapshot-section{% elif action.label == 'Adjust Schedule' %}{% url 'timetable_planner' %}{% elif action.label == 'Meal Timetable' %}{% url 'meal_timetable_planner' %}{% elif action.label == 'Change Goal' %}{% url 'onboarding' %}{% elif action.label == 'Browse Programs' %}{% url 'home' %}{% else %}#overview-section{% endif %}"
                                 class="home-action-btn"
                             >
                                 {{ action.icon }} {{ action.label }}
@@ -317,7 +357,7 @@
                     <div class="home-actions-grid">
                         {% for action in variant_panel.quick_actions %}
                             <a
-                                href="{% if action.label == 'View Full Plan' %}#recent-details-section{% elif action.label == 'View Progress' %}#progress-snapshot-section{% elif action.label == 'Adjust Schedule' %}{% url 'timetable_planner' %}{% elif action.label == 'Change Goal' %}{% url 'onboarding' %}{% elif action.label == 'Browse Programs' %}{% url 'home' %}{% else %}#overview-section{% endif %}"
+                                href="{% if action.label == 'View Full Plan' %}#recent-details-section{% elif action.label == 'View Progress' %}#progress-snapshot-section{% elif action.label == 'Adjust Schedule' %}{% url 'timetable_planner' %}{% elif action.label == 'Meal Timetable' %}{% url 'meal_timetable_planner' %}{% elif action.label == 'Change Goal' %}{% url 'onboarding' %}{% elif action.label == 'Browse Programs' %}{% url 'home' %}{% else %}#overview-section{% endif %}"
                                 class="home-action-btn"
                             >
                                 {{ action.icon }} {{ action.label }}
@@ -399,6 +439,58 @@
                 </div>
             </div>
             {% endif %}
+            {% if dashboard_variant == 'individual' and meal_panel %}
+            <div class="glassy-card home-actions-card reveal" id="meal-plan-section" style="--delay: 0.35s;">
+                <h3>Meal Plan</h3>
+                <div class="dashboard-grid dashboard-grid-compact">
+                    <div class="glassy-card status-card compact-card">
+                        <h3>Today ({{ meal_panel.today.day }})</h3>
+                        <ul class="status-list">
+                            <li><strong>Breakfast:</strong> {{ meal_panel.today.breakfast }}</li>
+                            <li><strong>Lunch:</strong> {{ meal_panel.today.lunch }}</li>
+                            <li><strong>Dinner:</strong> {{ meal_panel.today.dinner }}</li>
+                            <li><strong>Snack:</strong> {{ meal_panel.today.snack }}</li>
+                        </ul>
+                    </div>
+                    <div class="glassy-card status-card compact-card">
+                        <h3>Coverage</h3>
+                        <p>{{ meal_panel.days_planned }} days planned</p>
+                        <p><strong>Hydration target:</strong> {{ meal_panel.today.water_liters }} L today</p>
+                    </div>
+                    <div class="glassy-card status-card compact-card">
+                        <h3>Actions</h3>
+                        <p>Update meals and hydration schedule for the full week.</p>
+                        <a href="{{ meal_panel.planner_url }}" class="btn-secondary btn-small">Open Meal Timetable</a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            {% if dashboard_variant == 'hybrid' and meal_panel %}
+            <div class="glassy-card home-actions-card reveal" id="meal-plan-section" style="--delay: 0.36s;">
+                <h3>Meal Plan</h3>
+                <div class="dashboard-grid dashboard-grid-compact">
+                    <div class="glassy-card status-card compact-card">
+                        <h3>Today ({{ meal_panel.today.day }})</h3>
+                        <ul class="status-list">
+                            <li><strong>Breakfast:</strong> {{ meal_panel.today.breakfast }}</li>
+                            <li><strong>Lunch:</strong> {{ meal_panel.today.lunch }}</li>
+                            <li><strong>Dinner:</strong> {{ meal_panel.today.dinner }}</li>
+                            <li><strong>Snack:</strong> {{ meal_panel.today.snack }}</li>
+                        </ul>
+                    </div>
+                    <div class="glassy-card status-card compact-card">
+                        <h3>Coverage</h3>
+                        <p>{{ meal_panel.days_planned }} days planned</p>
+                        <p><strong>Hydration target:</strong> {{ meal_panel.today.water_liters }} L today</p>
+                    </div>
+                    <div class="glassy-card status-card compact-card">
+                        <h3>Actions</h3>
+                        <p>Update meals and hydration schedule for the full week.</p>
+                        <a href="{{ meal_panel.planner_url }}" class="btn-secondary btn-small">Open Meal Timetable</a>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
             {% endif %}
         </section>
         {% endif %}
@@ -430,6 +522,7 @@
             </div>
         </section>
         {% endif %}
+
         </div>
         </div>
     </div>

@@ -230,9 +230,8 @@
                             <label for="gym_access">GetFit Access</label>
                             <select id="gym_access" name="gym_access" required>
                                 <option value="">Select one</option>
-                                <option value="no_access">No GetFit access yet</option>
-                                <option value="commercial">GetFit Standard access</option>
-                                <option value="private">GetFit Premium access</option>
+                                <option value="commercial" {% if access_value == 'commercial' %}selected{% endif %}>Standard</option>
+                                <option value="private" {% if access_value == 'private' %}selected{% endif %}>Premium</option>
                             </select>
                         </div>
                     </div>

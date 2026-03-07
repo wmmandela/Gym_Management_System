@@ -25,7 +25,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-c&to4+3quy779-78f9dv3b&-ry6qpzf&mj1m(1=7o)6vw%m4c7')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'False').strip().lower() == 'true'
+is_vercel = os.getenv('VERCEL', '').strip() == '1'
+default_debug = not is_vercel
+debug_raw = os.getenv('DEBUG')
+if debug_raw is None:
+    DEBUG = default_debug
+else:
+    debug_value = debug_raw.strip().lower()
+    if debug_value in {'1', 'true', 'yes', 'on'}:
+        DEBUG = True
+    elif debug_value in {'0', 'false', 'no', 'off'}:
+        DEBUG = False
+    else:
+        DEBUG = default_debug
 
 default_hosts = ['127.0.0.1', 'localhost', '.vercel.app']
 env_hosts = [h.strip() for h in os.getenv('ALLOWED_HOSTS', '').split(',') if h.strip()]
@@ -146,7 +158,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 

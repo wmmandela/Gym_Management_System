@@ -53,20 +53,47 @@ TRAINER_CATALOG = [
 
 def _plan_capabilities_from_access(gym_access):
     access_key = (gym_access or '').strip()
-    plan_map = {
-        'no_access': 'basic',
-        'commercial': 'pro',
-        'private': 'elite',
-    }
-    plan = plan_map.get(access_key, 'basic')
+    if access_key == 'private':
+        plan = 'elite'
+    elif access_key == 'commercial':
+        plan = 'pro'
+    else:
+        plan = 'basic'
+
+    if plan == 'elite':
+        plan_label = 'Elite'
+    elif plan == 'pro':
+        plan_label = 'Pro'
+    else:
+        plan_label = 'Basic'
+
+    if plan == 'elite':
+        personal_trainer = True
+        nutrition_plan = True
+        group_classes = True
+        sauna_spa = True
+        gym_24_7 = True
+    elif plan == 'pro':
+        personal_trainer = False
+        nutrition_plan = False
+        group_classes = True
+        sauna_spa = False
+        gym_24_7 = True
+    else:
+        personal_trainer = False
+        nutrition_plan = False
+        group_classes = False
+        sauna_spa = False
+        gym_24_7 = False
+
     return {
         'plan_key': plan,
-        'plan_label': {'basic': 'Basic', 'pro': 'Pro', 'elite': 'Elite'}[plan],
-        'personal_trainer': plan == 'elite',
-        'nutrition_plan': plan == 'elite',
-        'group_classes': plan in {'pro', 'elite'},
-        'sauna_spa': plan == 'elite',
-        'gym_24_7': plan in {'pro', 'elite'},
+        'plan_label': plan_label,
+        'personal_trainer': personal_trainer,
+        'nutrition_plan': nutrition_plan,
+        'group_classes': group_classes,
+        'sauna_spa': sauna_spa,
+        'gym_24_7': gym_24_7,
     }
 
 
@@ -1029,40 +1056,47 @@ def elite_upgrade_prompt(request):
 
 
 def _build_recommendations(primary_goal, training_type, workout_frequency, program_type):
-    goal_map = {
-        'lose_weight': 'Fat loss focus with calorie burn circuits.',
-        'build_muscle': 'Progressive overload strength program.',
-        'improve_endurance': 'Interval and steady-state cardio mix.',
-        'increase_flexibility': 'Mobility and recovery flow sessions.',
-        'general_fitness': 'Balanced full-body sessions.',
-    }
+    if primary_goal == 'lose_weight':
+        goal_text = 'Fat loss focus with calorie burn circuits.'
+    elif primary_goal == 'build_muscle':
+        goal_text = 'Progressive overload strength program.'
+    elif primary_goal == 'improve_endurance':
+        goal_text = 'Interval and steady-state cardio mix.'
+    elif primary_goal == 'increase_flexibility':
+        goal_text = 'Mobility and recovery flow sessions.'
+    elif primary_goal == 'general_fitness':
+        goal_text = 'Balanced full-body sessions.'
+    else:
+        goal_text = 'Balanced training mix.'
 
-    type_map = {
-        'home': 'Bodyweight and minimal equipment routines.',
-        'gym': 'Machine and free-weight programming.',
-        'hybrid': 'Blended home and gym split.',
-    }
+    if training_type == 'home':
+        training_type_text = 'Bodyweight and minimal equipment routines.'
+    elif training_type == 'gym':
+        training_type_text = 'Machine and free-weight programming.'
+    elif training_type == 'hybrid':
+        training_type_text = 'Blended home and gym split.'
+    else:
+        training_type_text = 'Flexible training environment.'
 
-    freq_map = {
-        '2_3_days': 'Aim for 3 focused sessions weekly.',
-        '3_4_days': 'A 4-day split will fit you best.',
-        '5_plus_days': 'A 5-day plan with recovery blocks is ideal.',
-    }
+    if workout_frequency == '2_3_days':
+        frequency_text = 'Aim for 3 focused sessions weekly.'
+    elif workout_frequency == '3_4_days':
+        frequency_text = 'A 4-day split will fit you best.'
+    elif workout_frequency == '5_plus_days':
+        frequency_text = 'A 5-day plan with recovery blocks is ideal.'
+    else:
+        frequency_text = 'Stay consistent each week.'
 
-    program_map = {
-        'personal_trainer': 'Trainer-led sessions with guided progression.',
-        'individual': 'Independent training with self-paced tracking.',
-        'hybrid': 'Mix of coached and self-guided training blocks.',
-    }
+    if program_type == 'personal_trainer':
+        program_text = 'Trainer-led sessions with guided progression.'
+    elif program_type == 'individual':
+        program_text = 'Independent training with self-paced tracking.'
+    elif program_type == 'hybrid':
+        program_text = 'Mix of coached and self-guided training blocks.'
+    else:
+        program_text = 'Structured plan selected.'
 
-    return ' '.join(
-        [
-            goal_map.get(primary_goal, 'Balanced training mix.'),
-            type_map.get(training_type, 'Flexible training environment.'),
-            freq_map.get(workout_frequency, 'Stay consistent each week.'),
-            program_map.get(program_type, 'Structured plan selected.'),
-        ]
-    )
+    return ' '.join([goal_text, training_type_text, frequency_text, program_text])
 
 
 def _build_home_category_counts():
@@ -1191,41 +1225,52 @@ def _build_exercise_recommendations(profile):
 
 
 def _build_trainer_page_workout(profile):
-    goal_prefix = {
-        'lose_weight': 'Fat-Burn Circuit',
-        'build_muscle': 'Strength Builder',
-        'improve_endurance': 'Endurance Intervals',
-        'increase_flexibility': 'Mobility Flow',
-        'general_fitness': 'Full-Body Conditioning',
-    }
+    if profile.primary_goal == 'lose_weight':
+        goal_prefix = 'Fat-Burn Circuit'
+    elif profile.primary_goal == 'build_muscle':
+        goal_prefix = 'Strength Builder'
+    elif profile.primary_goal == 'improve_endurance':
+        goal_prefix = 'Endurance Intervals'
+    elif profile.primary_goal == 'increase_flexibility':
+        goal_prefix = 'Mobility Flow'
+    elif profile.primary_goal == 'general_fitness':
+        goal_prefix = 'Full-Body Conditioning'
+    else:
+        goal_prefix = 'Personalized Workout'
 
-    training_suffix = {
-        'home': 'Home Session',
-        'gym': 'Gym Session',
-        'hybrid': 'Hybrid Session',
-    }
+    if profile.training_type == 'home':
+        training_suffix = 'Home Session'
+    elif profile.training_type == 'gym':
+        training_suffix = 'Gym Session'
+    elif profile.training_type == 'hybrid':
+        training_suffix = 'Hybrid Session'
+    else:
+        training_suffix = 'Session'
 
-    duration_map = {
-        '20_30': '20–30 minutes',
-        '30_45': '30–45 minutes',
-        '45_60': '45–60 minutes',
-    }
+    if profile.workout_duration == '20_30':
+        duration_label = '20–30 minutes'
+    elif profile.workout_duration == '30_45':
+        duration_label = '30–45 minutes'
+    elif profile.workout_duration == '45_60':
+        duration_label = '45–60 minutes'
+    else:
+        duration_label = profile.get_workout_duration_display()
 
-    frequency_map = {
-        '2_3_days': '2–3 days/week',
-        '3_4_days': '3–4 days/week',
-        '5_plus_days': '5+ days/week',
-    }
+    if profile.workout_frequency == '2_3_days':
+        frequency_label = '2–3 days/week'
+    elif profile.workout_frequency == '3_4_days':
+        frequency_label = '3–4 days/week'
+    elif profile.workout_frequency == '5_plus_days':
+        frequency_label = '5+ days/week'
+    else:
+        frequency_label = profile.get_workout_frequency_display()
 
-    workout_name = (
-        f"{goal_prefix.get(profile.primary_goal, 'Personalized Workout')} - "
-        f"{training_suffix.get(profile.training_type, 'Session')}"
-    )
+    workout_name = f"{goal_prefix} - {training_suffix}"
 
     return {
         'today_workout': workout_name,
-        'duration': duration_map.get(profile.workout_duration, profile.get_workout_duration_display()),
-        'frequency': frequency_map.get(profile.workout_frequency, profile.get_workout_frequency_display()),
+        'duration': duration_label,
+        'frequency': frequency_label,
         'focus': profile.get_primary_goal_display(),
         'trainer_time': profile.assigned_trainer_time or 'Not scheduled',
     }
@@ -1293,21 +1338,29 @@ def _build_workout_sequence(profile):
 
 def _build_ui_metrics(profile):
     weight = profile.weight_kg or 70
-    goal_adjust = {
-        'lose_weight': -220,
-        'build_muscle': 260,
-        'improve_endurance': 90,
-        'increase_flexibility': -20,
-        'general_fitness': 40,
-    }
-    calories_target = max(1500, int((weight * 30) + goal_adjust.get(profile.primary_goal, 0)))
+    if profile.primary_goal == 'lose_weight':
+        goal_adjust = -220
+    elif profile.primary_goal == 'build_muscle':
+        goal_adjust = 260
+    elif profile.primary_goal == 'improve_endurance':
+        goal_adjust = 90
+    elif profile.primary_goal == 'increase_flexibility':
+        goal_adjust = -20
+    elif profile.primary_goal == 'general_fitness':
+        goal_adjust = 40
+    else:
+        goal_adjust = 0
+    calories_target = max(1500, int((weight * 30) + goal_adjust))
     water_liters = round(max(2.0, min(4.0, weight * 0.035)), 1)
     protein_g = max(80, int(weight * 1.4))
-    completion = {
-        '2_3_days': 62,
-        '3_4_days': 74,
-        '5_plus_days': 86,
-    }.get(profile.workout_frequency, 68)
+    if profile.workout_frequency == '2_3_days':
+        completion = 62
+    elif profile.workout_frequency == '3_4_days':
+        completion = 74
+    elif profile.workout_frequency == '5_plus_days':
+        completion = 86
+    else:
+        completion = 68
 
     return {
         'calories_target': calories_target,
@@ -1329,7 +1382,8 @@ def _build_today_checklist(profile):
 def _build_calendar_strip():
     today = date.today()
     days = []
-    for offset in range(-2, 3):
+    offset = -2
+    while offset <= 2:
         d = today + timedelta(days=offset)
         days.append(
             {
@@ -1338,6 +1392,7 @@ def _build_calendar_strip():
                 'is_today': offset == 0,
             }
         )
+        offset += 1
     return days
 
 

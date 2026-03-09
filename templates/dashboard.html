@@ -194,13 +194,23 @@
                     </div>
                     <div class="glassy-card status-card compact-card">
                         <h3>Coverage</h3>
-                        <p>{{ meal_panel.days_planned }} days planned</p>
-                        <p><strong>Hydration target:</strong> {{ meal_panel.today.water_liters }} L today</p>
+                        {% if meal_panel.enabled %}
+                            <p>{{ meal_panel.days_planned }} days planned</p>
+                            <p><strong>Hydration target:</strong> {{ meal_panel.today.water_liters }} L today</p>
+                        {% else %}
+                            <p>Locked on {{ plan_caps.plan_label }}</p>
+                            <p>{{ meal_panel.upgrade_message }}</p>
+                        {% endif %}
                     </div>
                     <div class="glassy-card status-card compact-card">
                         <h3>Actions</h3>
-                        <p>Update meals and hydration schedule for the full week.</p>
-                        <a href="{{ meal_panel.planner_url }}" class="btn-secondary btn-small">Open Meal Timetable</a>
+                        {% if meal_panel.enabled %}
+                            <p>Update meals and hydration schedule for the full week.</p>
+                            <a href="{{ meal_panel.planner_url }}" class="btn-secondary btn-small">Open Meal Timetable</a>
+                        {% else %}
+                            <p>Upgrade from onboarding to unlock Nutrition Plan.</p>
+                            <a href="{{ meal_panel.planner_url }}" class="btn-secondary btn-small">Upgrade To Elite</a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -458,13 +468,23 @@
                     </div>
                     <div class="glassy-card status-card compact-card">
                         <h3>Coverage</h3>
-                        <p>{{ meal_panel.days_planned }} days planned</p>
-                        <p><strong>Hydration target:</strong> {{ meal_panel.today.water_liters }} L today</p>
+                        {% if meal_panel.enabled %}
+                            <p>{{ meal_panel.days_planned }} days planned</p>
+                            <p><strong>Hydration target:</strong> {{ meal_panel.today.water_liters }} L today</p>
+                        {% else %}
+                            <p>Locked on {{ plan_caps.plan_label }}</p>
+                            <p>{{ meal_panel.upgrade_message }}</p>
+                        {% endif %}
                     </div>
                     <div class="glassy-card status-card compact-card">
                         <h3>Actions</h3>
-                        <p>Update meals and hydration schedule for the full week.</p>
-                        <a href="{{ meal_panel.planner_url }}" class="btn-secondary btn-small">Open Meal Timetable</a>
+                        {% if meal_panel.enabled %}
+                            <p>Update meals and hydration schedule for the full week.</p>
+                            <a href="{{ meal_panel.planner_url }}" class="btn-secondary btn-small">Open Meal Timetable</a>
+                        {% else %}
+                            <p>Upgrade from onboarding to unlock Nutrition Plan.</p>
+                            <a href="{{ meal_panel.planner_url }}" class="btn-secondary btn-small">Upgrade To Elite</a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -484,13 +504,23 @@
                     </div>
                     <div class="glassy-card status-card compact-card">
                         <h3>Coverage</h3>
-                        <p>{{ meal_panel.days_planned }} days planned</p>
-                        <p><strong>Hydration target:</strong> {{ meal_panel.today.water_liters }} L today</p>
+                        {% if meal_panel.enabled %}
+                            <p>{{ meal_panel.days_planned }} days planned</p>
+                            <p><strong>Hydration target:</strong> {{ meal_panel.today.water_liters }} L today</p>
+                        {% else %}
+                            <p>Locked on {{ plan_caps.plan_label }}</p>
+                            <p>{{ meal_panel.upgrade_message }}</p>
+                        {% endif %}
                     </div>
                     <div class="glassy-card status-card compact-card">
                         <h3>Actions</h3>
-                        <p>Update meals and hydration schedule for the full week.</p>
-                        <a href="{{ meal_panel.planner_url }}" class="btn-secondary btn-small">Open Meal Timetable</a>
+                        {% if meal_panel.enabled %}
+                            <p>Update meals and hydration schedule for the full week.</p>
+                            <a href="{{ meal_panel.planner_url }}" class="btn-secondary btn-small">Open Meal Timetable</a>
+                        {% else %}
+                            <p>Upgrade from onboarding to unlock Nutrition Plan.</p>
+                            <a href="{{ meal_panel.planner_url }}" class="btn-secondary btn-small">Upgrade To Elite</a>
+                        {% endif %}
                     </div>
                 </div>
             </div>

@@ -8,6 +8,9 @@
         <div class="dashboard-topline">
             <h1>Weekly Timetable Planner</h1>
             <p>Set your workout, coaching mode, and location for each day.</p>
+            {% if not plan_caps.personal_trainer %}
+                <p><strong>Note:</strong> Coach-led mode requires Elite. Your timetable will save as self-guided/recovery.</p>
+            {% endif %}
         </div>
 
         <div class="glassy-card home-actions-card">
@@ -26,7 +29,9 @@
                             <div class="form-field">
                                 <label for="coaching_{{ forloop.counter0 }}">Mode</label>
                                 <select id="coaching_{{ forloop.counter0 }}" name="day_{{ forloop.counter0 }}_coaching" required>
-                                    <option value="Coach-led" {% if day.coaching == 'Coach-led' %}selected{% endif %}>Coach-led</option>
+                                    {% if plan_caps.personal_trainer %}
+                                        <option value="Coach-led" {% if day.coaching == 'Coach-led' %}selected{% endif %}>Coach-led</option>
+                                    {% endif %}
                                     <option value="Self-guided" {% if day.coaching == 'Self-guided' %}selected{% endif %}>Self-guided</option>
                                     <option value="Recovery" {% if day.coaching == 'Recovery' %}selected{% endif %}>Recovery</option>
                                 </select>

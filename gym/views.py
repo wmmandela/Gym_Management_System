@@ -51,6 +51,31 @@ TRAINER_CATALOG = [
 ]
 
 
+def _plan_capabilities_from_access(gym_access):
+    access_key = (gym_access or '').strip()
+    plan_map = {
+        'no_access': 'basic',
+        'commercial': 'pro',
+        'private': 'elite',
+    }
+    plan = plan_map.get(access_key, 'basic')
+    return {
+        'plan_key': plan,
+        'plan_label': {'basic': 'Basic', 'pro': 'Pro', 'elite': 'Elite'}[plan],
+        'personal_trainer': plan == 'elite',
+        'nutrition_plan': plan == 'elite',
+        'group_classes': plan in {'pro', 'elite'},
+        'sauna_spa': plan == 'elite',
+        'gym_24_7': plan in {'pro', 'elite'},
+    }
+
+
+def _plan_capabilities(profile):
+    if not profile:
+        return _plan_capabilities_from_access('')
+    return _plan_capabilities_from_access(profile.gym_access)
+
+
 def home(request):
     return render(request, 'home.html', {'category_counts': _build_home_category_counts()})
 
@@ -155,6 +180,18 @@ def dashboard(request):
         return redirect('home')
     if not profile or not profile.onboarding_complete:
         return _render_dashboard(request, profile=profile, dashboard_variant='generic')
+    capabilities = _plan_capabilities(profile)
+    if profile.program_type in {'personal_trainer', 'hybrid'} and not capabilities['personal_trainer']:
+        try:
+            if profile.program_type != 'individual' or profile.assigned_trainer or profile.assigned_trainer_time:
+                profile.program_type = 'individual'
+                profile.personal_coaching = 'no'
+                profile.assigned_trainer = ''
+                profile.assigned_trainer_time = ''
+                profile.save(update_fields=['program_type', 'personal_coaching', 'assigned_trainer', 'assigned_trainer_time'])
+        except DatabaseError:
+            pass
+        messages.info(request, 'Personal trainer features require Elite. You are now on the individual flow.')
     if profile.program_type in {'personal_trainer', 'hybrid'} and not profile.assigned_trainer:
         return redirect('initial_trainer_selection')
     try:
@@ -175,6 +212,9 @@ def personal_trainer_dashboard(request):
     profile = _require_profile(request)
     if not profile:
         return redirect('dashboard')
+    if not _plan_capabilities(profile)['personal_trainer']:
+        messages.info(request, 'Personal trainer requires Elite. Upgrade to Elite or continue without a trainer.')
+        return redirect('dashboard')
     if not profile.assigned_trainer:
         return redirect('initial_trainer_selection')
 
@@ -191,6 +231,9 @@ def personal_trainer_dashboard(request):
 def trainer_page(request):
     profile = _require_profile(request)
     if not profile:
+        return redirect('dashboard')
+    if not _plan_capabilities(profile)['personal_trainer']:
+        messages.info(request, 'Trainer sessions require Elite. Upgrade to Elite or continue with self-guided workouts.')
         return redirect('dashboard')
 
     if not profile.assigned_trainer:
@@ -221,6 +264,9 @@ def trainer_page(request):
 def trainer_workout(request):
     profile = _require_profile(request)
     if not profile:
+        return redirect('dashboard')
+    if not _plan_capabilities(profile)['personal_trainer']:
+        messages.info(request, 'Trainer sessions require Elite. Upgrade to Elite or continue with self-guided workouts.')
         return redirect('dashboard')
     if not profile.assigned_trainer:
         messages.info(request, 'Please select a trainer first.')
@@ -309,6 +355,9 @@ def hybrid_dashboard(request):
     profile = _require_profile(request)
     if not profile:
         return redirect('dashboard')
+    if not _plan_capabilities(profile)['personal_trainer']:
+        messages.info(request, 'Hybrid trainer sessions require Elite. Upgrade to Elite or continue with individual mode.')
+        return redirect('dashboard')
     if not profile.assigned_trainer:
         return redirect('initial_trainer_selection')
 
@@ -359,12 +408,21 @@ def self_guided_workout(request):
         }
 
     coaching_mode = (selected_day.get('coaching') or '').strip()
+    capabilities = _plan_capabilities(profile)
     if coaching_mode == 'Coach-led':
-        if profile.assigned_trainer:
+        if not capabilities['personal_trainer']:
+            messages.info(request, 'Coach-led sessions require Elite. Continuing with self-guided workout.')
+            selected_day = {
+                **selected_day,
+                'coaching': 'Self-guided',
+            }
+            coaching_mode = 'Self-guided'
+        elif profile.assigned_trainer:
             messages.info(request, 'This day is coach-led. Opening your trainer workout session.')
             return redirect(f"{reverse('trainer_workout')}?day={(selected_day.get('day') or '').strip().lower()}")
-        messages.info(request, 'This day is coach-led. Assign a trainer first.')
-        return redirect('initial_trainer_selection')
+        else:
+            messages.info(request, 'This day is coach-led. Assign a trainer first.')
+            return redirect('initial_trainer_selection')
 
     workout_context = _build_self_guided_workout_session(profile, selected_day)
     complete_redirect_url = reverse('hybrid_dashboard') if profile.program_type == 'hybrid' else reverse('individual_dashboard')
@@ -449,6 +507,9 @@ def select_trainer(request):
     profile = _require_profile(request)
     if not profile:
         return redirect('dashboard')
+    if not _plan_capabilities(profile)['personal_trainer']:
+        messages.info(request, 'Personal trainer requires Elite. Upgrade to Elite or continue without trainer support.')
+        return redirect('dashboard')
 
     if request.method != 'POST':
         return redirect('dashboard')
@@ -486,6 +547,9 @@ def select_trainer(request):
 def create_hybrid_plan(request):
     profile = _require_profile(request)
     if not profile:
+        return redirect('dashboard')
+    if not _plan_capabilities(profile)['personal_trainer']:
+        messages.info(request, 'Hybrid trainer plans require Elite. Upgrade to Elite to unlock this feature.')
         return redirect('dashboard')
 
     if request.method != 'POST':
@@ -542,6 +606,10 @@ def onboarding(request):
                 'Please choose a plan: Basic, Pro, or Elite.',
             )
             return render(request, 'onboarding.html', {'access_value': access_value})
+        plan_capabilities = _plan_capabilities_from_access(gym_access)
+        requested_program_type = program_type
+        if requested_program_type in {'personal_trainer', 'hybrid'} and not plan_capabilities['personal_trainer']:
+            program_type = 'individual'
         coaching_from_program = {
             'personal_trainer': 'yes',
             'individual': 'no',
@@ -576,6 +644,8 @@ def onboarding(request):
                     'program_type': program_type,
                     'coaching_style': request.POST.get('coaching_style') or '',
                     'instructor_preference': request.POST.get('instructor_preference') or '',
+                    'assigned_trainer': '',
+                    'assigned_trainer_time': '',
                     'tracking_metrics': ','.join(tracking_metrics),
                     'progress_check_frequency': request.POST.get('progress_check_frequency') or '',
                     'commitment_level': request.POST.get('commitment_level') or '',
@@ -599,13 +669,19 @@ def onboarding(request):
         except DatabaseError:
             messages.error(request, 'Could not save onboarding right now. Please try again.')
             return render(request, 'onboarding.html', {'access_value': access_value})
-        try:
-            MealTimetablePlan.objects.get_or_create(
-                user=request.user,
-                defaults={'schedule': _default_meal_timetable_schedule(profile)},
+        if plan_capabilities['nutrition_plan']:
+            try:
+                MealTimetablePlan.objects.get_or_create(
+                    user=request.user,
+                    defaults={'schedule': _default_meal_timetable_schedule(profile)},
+                )
+            except DatabaseError:
+                pass
+        if requested_program_type in {'personal_trainer', 'hybrid'} and program_type == 'individual':
+            messages.warning(
+                request,
+                'Personal trainer requires Elite. You can upgrade to Elite or proceed without personal trainer support.',
             )
-        except DatabaseError:
-            pass
         messages.success(request, 'Onboarding complete. Your plan is ready!')
         if profile.program_type in {'personal_trainer', 'hybrid'} and not profile.assigned_trainer:
             return redirect('initial_trainer_selection')
@@ -644,6 +720,7 @@ def _render_dashboard(request, profile, dashboard_variant, trainer_recommendatio
     hybrid_panel = {}
     meal_panel = {}
     timetable_schedule = []
+    plan_caps = _plan_capabilities(profile) if profile else _plan_capabilities_from_access('')
     if profile:
         try:
             timetable = TimetablePlan.objects.filter(user=request.user).first()
@@ -654,13 +731,13 @@ def _render_dashboard(request, profile, dashboard_variant, trainer_recommendatio
         except DatabaseError:
             timetable_schedule = _default_timetable_schedule(profile)
     if profile and dashboard_variant == 'individual' and profile.training_type == 'home':
-        individual_home_panel = _build_individual_home_panel(profile, plans, progress_metrics, timetable_schedule)
+        individual_home_panel = _build_individual_home_panel(profile, plans, progress_metrics, timetable_schedule, plan_caps)
     elif profile and dashboard_variant in {'personal_trainer', 'hybrid', 'individual'}:
-        variant_panel = _build_dashboard_variant_panel(profile, dashboard_variant, progress_metrics, timetable_schedule)
+        variant_panel = _build_dashboard_variant_panel(profile, dashboard_variant, progress_metrics, timetable_schedule, plan_caps)
     if profile and dashboard_variant == 'hybrid':
         hybrid_panel = _build_hybrid_integration_panel(profile, exercise_plan or {})
     if profile:
-        meal_panel = _build_meal_dashboard_panel(profile)
+        meal_panel = _build_meal_dashboard_panel(profile, plan_caps)
 
     context = {
         'user_name': request.user.first_name or request.user.username,
@@ -673,6 +750,7 @@ def _render_dashboard(request, profile, dashboard_variant, trainer_recommendatio
         'variant_panel': variant_panel,
         'hybrid_panel': hybrid_panel,
         'meal_panel': meal_panel,
+        'plan_caps': plan_caps,
         'progress_metrics': progress_metrics,
         'progress_metrics_url': reverse('progress_metrics_api') if profile else '',
     }
@@ -682,6 +760,9 @@ def _render_dashboard(request, profile, dashboard_variant, trainer_recommendatio
 def initial_trainer_selection(request):
     profile = _require_profile(request)
     if not profile:
+        return redirect('dashboard')
+    if not _plan_capabilities(profile)['personal_trainer']:
+        messages.info(request, 'Personal trainer requires Elite. Upgrade to Elite or continue without trainer support.')
         return redirect('dashboard')
 
     if profile.program_type not in {'personal_trainer', 'hybrid'}:
@@ -705,6 +786,7 @@ def timetable_planner(request):
         return redirect('dashboard')
     if profile.program_type in {'personal_trainer', 'hybrid'} and not profile.assigned_trainer:
         return redirect('initial_trainer_selection')
+    plan_caps = _plan_capabilities(profile)
 
     timetable = None
     schedule = []
@@ -727,11 +809,14 @@ def timetable_planner(request):
         updated = []
         for idx, item in enumerate(schedule):
             day_name = request.POST.get(f'day_{idx}_day', item.get('day', ''))
+            requested_coaching = request.POST.get(f'day_{idx}_coaching', item.get('coaching', 'Self-guided'))
+            if requested_coaching == 'Coach-led' and not plan_caps['personal_trainer']:
+                requested_coaching = 'Self-guided'
             updated.append(
                 {
                     'day': day_name or item.get('day', ''),
                     'workout': request.POST.get(f'day_{idx}_workout', item.get('workout', '')),
-                    'coaching': request.POST.get(f'day_{idx}_coaching', item.get('coaching', 'Self-guided')),
+                    'coaching': requested_coaching,
                     'location': request.POST.get(f'day_{idx}_location', item.get('location', 'Home')),
                 }
             )
@@ -755,6 +840,7 @@ def timetable_planner(request):
         'profile': profile,
         'user_name': request.user.first_name or request.user.username,
         'schedule': schedule,
+        'plan_caps': plan_caps,
     }
     return render(request, 'timetable_planner.html', context)
 
@@ -762,6 +848,9 @@ def timetable_planner(request):
 def meal_timetable_planner(request):
     profile = _require_profile(request)
     if not profile:
+        return redirect('dashboard')
+    if not _plan_capabilities(profile)['nutrition_plan']:
+        messages.info(request, 'Nutrition plan is available on Elite. Upgrade to Elite to unlock meal timetable planning.')
         return redirect('dashboard')
 
     meal_timetable = None
@@ -815,6 +904,7 @@ def meal_timetable_planner(request):
         'profile': profile,
         'user_name': request.user.first_name or request.user.username,
         'schedule': schedule,
+        'plan_caps': _plan_capabilities(profile),
     }
     return render(request, 'meal_timetable_planner.html', context)
 
@@ -1185,7 +1275,7 @@ def _build_tracking_panel(profile, ui_metrics, progress_metrics):
     return tracking_items
 
 
-def _build_individual_home_panel(profile, plans, progress_metrics, timetable_schedule):
+def _build_individual_home_panel(profile, plans, progress_metrics, timetable_schedule, plan_caps):
     today_workout_by_goal = {
         'lose_weight': 'Full Body Fat Burn',
         'build_muscle': 'Home Strength Builder',
@@ -1204,7 +1294,7 @@ def _build_individual_home_panel(profile, plans, progress_metrics, timetable_sch
 
     schedule = _build_weekly_schedule_from_timetable(profile, timetable_schedule)
     today_schedule = _get_today_schedule_item(timetable_schedule)
-    start_workout_url = _resolve_workout_url(profile, today_schedule)
+    start_workout_url = _resolve_workout_url(profile, today_schedule, plan_caps)
 
     goal_sessions = {
         '2_3_days': 5,
@@ -1253,12 +1343,14 @@ def _build_individual_home_panel(profile, plans, progress_metrics, timetable_sch
     metrics = [m.strip() for m in (profile.tracking_metrics or '').split(',') if m.strip()]
     calorie_target = max(1500, int((profile.weight_kg or 70) * 30))
     nutrition_snapshot = {
-        'show': True,
+        'show': bool(metrics) and plan_caps['nutrition_plan'],
         'daily_calorie_target': calorie_target,
         'water_intake': f"{round(max(2.0, min(4.0, (profile.weight_kg or 70) * 0.035)), 1)} L",
         'meal_plan_link': reverse('meal_timetable_planner'),
         'calorie_progress_pct': min(100, int((calories_burned / max(1, calorie_target)) * 100)),
-    } if metrics else {'show': False}
+    } if metrics and plan_caps['nutrition_plan'] else {'show': False}
+    if not plan_caps['nutrition_plan']:
+        nutrition_snapshot['upgrade_note'] = 'Nutrition plan is available on Elite.'
 
     achievement_tier = 'Bronze'
     if completed_sessions >= 5:
@@ -1269,7 +1361,7 @@ def _build_individual_home_panel(profile, plans, progress_metrics, timetable_sch
     minutes_per_session = {'20_30': 25, '30_45': 38, '45_60': 52}.get(profile.workout_duration, 30)
     total_minutes_month = progress_metrics['minutes_this_month']
 
-    return {
+    panel = {
         'today_workout': (today_schedule.get('workout') if today_schedule else '') or today_workout_by_goal.get(profile.primary_goal, 'Full Body Session'),
         'duration': profile.get_workout_duration_display(),
         'goal': profile.get_primary_goal_display(),
@@ -1289,7 +1381,6 @@ def _build_individual_home_panel(profile, plans, progress_metrics, timetable_sch
             {'label': 'View Full Plan', 'icon': '📋'},
             {'label': 'View Progress', 'icon': '📈'},
             {'label': 'Adjust Schedule', 'icon': '📅'},
-            {'label': 'Meal Timetable', 'icon': '🍽️'},
             {'label': 'Change Goal', 'icon': '🎯'},
             {'label': 'Browse Programs', 'icon': '🎥'},
         ],
@@ -1301,9 +1392,12 @@ def _build_individual_home_panel(profile, plans, progress_metrics, timetable_sch
         'nutrition': nutrition_snapshot,
         'total_minutes_month': total_minutes_month,
     }
+    if plan_caps['nutrition_plan']:
+        panel['quick_actions'].insert(3, {'label': 'Meal Timetable', 'icon': '🍽️'})
+    return panel
 
 
-def _build_dashboard_variant_panel(profile, dashboard_variant, progress_metrics, timetable_schedule):
+def _build_dashboard_variant_panel(profile, dashboard_variant, progress_metrics, timetable_schedule, plan_caps):
     weekly_templates = {
         'lose_weight': ['Cardio', 'Core', 'HIIT', 'Upper Body', 'Lower Body', 'Rest', 'Stretch'],
         'build_muscle': ['Push', 'Pull', 'Legs', 'Upper Body', 'Lower Body', 'Rest', 'Mobility'],
@@ -1314,7 +1408,7 @@ def _build_dashboard_variant_panel(profile, dashboard_variant, progress_metrics,
 
     schedule = _build_weekly_schedule_from_timetable(profile, timetable_schedule)
     today_schedule = _get_today_schedule_item(timetable_schedule)
-    action_url = _resolve_workout_url(profile, today_schedule)
+    action_url = _resolve_workout_url(profile, today_schedule, plan_caps)
     completed = progress_metrics['workouts_this_week']
     goal_sessions = {'2_3_days': 5, '3_4_days': 6, '5_plus_days': 7}.get(profile.workout_frequency, 5)
     completion_pct = progress_metrics['consistency_percent']
@@ -1330,10 +1424,10 @@ def _build_dashboard_variant_panel(profile, dashboard_variant, progress_metrics,
         'hybrid': 'Start Workout Session',
         'individual': 'Start Workout Session',
     }
-    if today_schedule and today_schedule.get('coaching') == 'Coach-led':
+    if today_schedule and today_schedule.get('coaching') == 'Coach-led' and plan_caps['personal_trainer']:
         action_map['hybrid'] = 'Open Trainer Session'
 
-    return {
+    panel = {
         'hero_title': hero_title_map.get(dashboard_variant, 'Today: Workout Session'),
         'goal': profile.get_primary_goal_display(),
         'level': profile.get_fitness_level_display(),
@@ -1354,11 +1448,13 @@ def _build_dashboard_variant_panel(profile, dashboard_variant, progress_metrics,
             {'label': 'View Full Plan', 'icon': '📋'},
             {'label': 'View Progress', 'icon': '📈'},
             {'label': 'Adjust Schedule', 'icon': '📅'},
-            {'label': 'Meal Timetable', 'icon': '🍽️'},
             {'label': 'Change Goal', 'icon': '🎯'},
             {'label': 'Browse Programs', 'icon': '🎥'},
         ],
     }
+    if plan_caps['nutrition_plan']:
+        panel['quick_actions'].insert(3, {'label': 'Meal Timetable', 'icon': '🍽️'})
+    return panel
 
 
 def _build_weekly_schedule(primary_goal, weekly_templates):
@@ -1395,10 +1491,12 @@ def _get_today_schedule_item(timetable_schedule):
     return timetable_schedule[0]
 
 
-def _resolve_workout_url(profile, schedule_item):
+def _resolve_workout_url(profile, schedule_item, plan_caps=None):
+    if plan_caps is None:
+        plan_caps = _plan_capabilities(profile)
     selected_day = (schedule_item.get('day') if schedule_item else date.today().strftime('%A'))
     selected_day = (selected_day or date.today().strftime('%A')).strip().lower()
-    if schedule_item and schedule_item.get('coaching') == 'Coach-led':
+    if schedule_item and schedule_item.get('coaching') == 'Coach-led' and plan_caps['personal_trainer']:
         return f"{reverse('trainer_workout')}?day={selected_day}"
 
     return f"{reverse('self_guided_workout')}?day={selected_day}"
@@ -1409,6 +1507,7 @@ def _build_weekly_schedule_from_timetable(profile, timetable_schedule):
         timetable_schedule = _default_timetable_schedule(profile)
 
     today_index = date.today().weekday()
+    plan_caps = _plan_capabilities(profile)
     schedule = []
     for idx, item in enumerate(timetable_schedule[:7]):
         workout_name = (item.get('workout') or 'Workout').strip()
@@ -1434,7 +1533,7 @@ def _build_weekly_schedule_from_timetable(profile, timetable_schedule):
                 'workout': workout_name,
                 'status': status,
                 'icon': status_icon,
-                'link': _resolve_workout_url(profile, item),
+                'link': _resolve_workout_url(profile, item, plan_caps),
             }
         )
     return schedule
@@ -1499,6 +1598,7 @@ def _default_timetable_schedule(profile):
         'general_fitness': ['Cardio', 'Core', 'HIIT', 'Upper Body', 'Lower Body', 'Rest', 'Stretch'],
     }
     workouts = template_by_goal.get(profile.primary_goal, template_by_goal['general_fitness'])
+    plan_caps = _plan_capabilities(profile)
 
     schedule = []
     for idx, day in enumerate(days):
@@ -1507,9 +1607,9 @@ def _default_timetable_schedule(profile):
             location = 'Home'
         else:
             if profile.program_type == 'hybrid':
-                coaching = 'Coach-led' if idx % 2 == 0 else 'Self-guided'
+                coaching = 'Coach-led' if (idx % 2 == 0 and plan_caps['personal_trainer']) else 'Self-guided'
                 location = 'Gym' if idx % 2 == 0 else 'Home'
-            elif profile.program_type == 'personal_trainer':
+            elif profile.program_type == 'personal_trainer' and plan_caps['personal_trainer']:
                 coaching = 'Coach-led'
                 location = 'Gym'
             else:
@@ -1529,6 +1629,7 @@ def _default_timetable_schedule(profile):
 
 def _normalize_timetable_schedule(profile, raw_schedule):
     default_schedule = _default_timetable_schedule(profile)
+    plan_caps = _plan_capabilities(profile)
     if not isinstance(raw_schedule, list) or not raw_schedule:
         return default_schedule
 
@@ -1541,6 +1642,8 @@ def _normalize_timetable_schedule(profile, raw_schedule):
         coaching = source.get('coaching') or default_item['coaching']
         if coaching not in {'Coach-led', 'Self-guided', 'Recovery'}:
             coaching = default_item['coaching']
+        if coaching == 'Coach-led' and not plan_caps['personal_trainer']:
+            coaching = 'Self-guided'
         location = source.get('location') or default_item['location']
         if location not in {'Home', 'Gym'}:
             location = default_item['location']
@@ -1647,7 +1750,22 @@ def _normalize_meal_timetable_schedule(profile, raw_schedule):
     return normalized
 
 
-def _build_meal_dashboard_panel(profile):
+def _build_meal_dashboard_panel(profile, plan_caps):
+    if not plan_caps['nutrition_plan']:
+        return {
+            'enabled': False,
+            'days_planned': 0,
+            'planner_url': reverse('onboarding'),
+            'today': {
+                'day': date.today().strftime('%A'),
+                'breakfast': 'Upgrade to Elite to unlock personalized nutrition.',
+                'lunch': 'Upgrade to Elite to unlock personalized nutrition.',
+                'dinner': 'Upgrade to Elite to unlock personalized nutrition.',
+                'snack': 'Upgrade to Elite to unlock personalized nutrition.',
+                'water_liters': '2.5',
+            },
+            'upgrade_message': 'Nutrition plan is available on Elite. Upgrade from onboarding to unlock this feature.',
+        }
     try:
         meal_timetable, _ = MealTimetablePlan.objects.get_or_create(
             user=profile.user,
@@ -1661,6 +1779,7 @@ def _build_meal_dashboard_panel(profile):
     today_meal = schedule[today_idx] if today_idx < len(schedule) else schedule[0]
 
     return {
+        'enabled': True,
         'today': today_meal,
         'days_planned': len([item for item in schedule if item.get('breakfast') or item.get('lunch') or item.get('dinner')]),
         'schedule': schedule,

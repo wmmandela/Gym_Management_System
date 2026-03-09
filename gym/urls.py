@@ -7,6 +7,7 @@ urlpatterns = [
     path('signin/', views.signin, name='signin'),
     path('signup/', views.signup, name='signup'),
     path('onboarding/', views.onboarding, name='onboarding'),
+    path('onboarding/elite-upgrade/', views.elite_upgrade_prompt, name='elite_upgrade_prompt'),
     path('onboarding/select-trainer/', views.initial_trainer_selection, name='initial_trainer_selection'),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('dashboard/timetable/', views.timetable_planner, name='timetable_planner'),

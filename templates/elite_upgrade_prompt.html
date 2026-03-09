@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}GetFit - Upgrade Choice{% endblock %}
+
+{% block content %}
+<section class="dashboard-shell">
+    <div class="container">
+        <div class="dashboard-topline">
+            <h1>One Last Step Before Dashboard</h1>
+            <p>You selected <strong>{{ requested_program_type|title }}</strong> but your access is <strong>{{ selected_access_label }}</strong>.</p>
+        </div>
+
+        <div class="glassy-card auth-card" style="max-width: 880px; margin: 0 auto;">
+            <h2>Personal Trainer Requires Elite</h2>
+            <p>Choose how you want to continue.</p>
+
+            <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; gap: 14px; margin: 14px 0;">
+                <div class="glassy-card status-card compact-card">
+                    <h3>Your Current Plan ({{ selected_access_label }})</h3>
+                    <ul class="status-list">
+                        <li>Gym access</li>
+                        <li>Free locker</li>
+                        <li>No personal trainer</li>
+                        <li>No nutrition plan</li>
+                    </ul>
+                </div>
+                <div class="glassy-card status-card compact-card">
+                    <h3>Elite Upgrade</h3>
+                    <ul class="status-list">
+                        <li>Personal trainer access</li>
+                        <li>Nutrition plan and meal timetable</li>
+                        <li>Unlimited classes</li>
+                        <li>Sauna & spa access</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="form-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="upgrade">
+                    <button class="btn-primary" type="submit">Upgrade To Elite</button>
+                </form>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="continue_without">
+                    <button class="btn-secondary" type="submit">Proceed Without Personal Trainer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -76,6 +76,16 @@ def _plan_capabilities(profile):
     return _plan_capabilities_from_access(profile.gym_access)
 
 
+def _has_pending_elite_upgrade(request):
+    return request.session.get('pending_elite_upgrade') == '1'
+
+
+def _redirect_if_pending_elite_upgrade(request):
+    if _has_pending_elite_upgrade(request):
+        return redirect('elite_upgrade_prompt')
+    return None
+
+
 def home(request):
     return render(request, 'home.html', {'category_counts': _build_home_category_counts()})
 
@@ -172,6 +182,9 @@ def dashboard(request):
     if not request.user.is_authenticated:
         messages.info(request, 'Please sign in to access your dashboard.')
         return redirect('signin')
+    pending_redirect = _redirect_if_pending_elite_upgrade(request)
+    if pending_redirect:
+        return pending_redirect
 
     try:
         profile = MemberProfile.objects.filter(user=request.user).first()
@@ -209,6 +222,9 @@ def dashboard(request):
 
 
 def personal_trainer_dashboard(request):
+    pending_redirect = _redirect_if_pending_elite_upgrade(request)
+    if pending_redirect:
+        return pending_redirect
     profile = _require_profile(request)
     if not profile:
         return redirect('dashboard')
@@ -229,6 +245,9 @@ def personal_trainer_dashboard(request):
 
 
 def trainer_page(request):
+    pending_redirect = _redirect_if_pending_elite_upgrade(request)
+    if pending_redirect:
+        return pending_redirect
     profile = _require_profile(request)
     if not profile:
         return redirect('dashboard')
@@ -262,6 +281,9 @@ def trainer_page(request):
 
 
 def trainer_workout(request):
+    pending_redirect = _redirect_if_pending_elite_upgrade(request)
+    if pending_redirect:
+        return pending_redirect
     profile = _require_profile(request)
     if not profile:
         return redirect('dashboard')
@@ -339,6 +361,9 @@ def trainer_workout(request):
 
 
 def individual_dashboard(request):
+    pending_redirect = _redirect_if_pending_elite_upgrade(request)
+    if pending_redirect:
+        return pending_redirect
     profile = _require_profile(request)
     if not profile:
         return redirect('dashboard')
@@ -352,6 +377,9 @@ def individual_dashboard(request):
 
 
 def hybrid_dashboard(request):
+    pending_redirect = _redirect_if_pending_elite_upgrade(request)
+    if pending_redirect:
+        return pending_redirect
     profile = _require_profile(request)
     if not profile:
         return redirect('dashboard')
@@ -371,6 +399,9 @@ def hybrid_dashboard(request):
 
 
 def self_guided_workout(request):
+    pending_redirect = _redirect_if_pending_elite_upgrade(request)
+    if pending_redirect:
+        return pending_redirect
     profile = _require_profile(request)
     if not profile:
         return redirect('dashboard')
@@ -504,6 +535,9 @@ def progress_metrics_api(request):
 
 
 def select_trainer(request):
+    pending_redirect = _redirect_if_pending_elite_upgrade(request)
+    if pending_redirect:
+        return pending_redirect
     profile = _require_profile(request)
     if not profile:
         return redirect('dashboard')
@@ -545,6 +579,9 @@ def select_trainer(request):
 
 
 def create_hybrid_plan(request):
+    pending_redirect = _redirect_if_pending_elite_upgrade(request)
+    if pending_redirect:
+        return pending_redirect
     profile = _require_profile(request)
     if not profile:
         return redirect('dashboard')
@@ -678,10 +715,11 @@ def onboarding(request):
             except DatabaseError:
                 pass
         if requested_program_type in {'personal_trainer', 'hybrid'} and program_type == 'individual':
-            messages.warning(
-                request,
-                'Personal trainer requires Elite. You can upgrade to Elite or proceed without personal trainer support.',
-            )
+            request.session['pending_elite_upgrade'] = '1'
+            request.session['pending_requested_program_type'] = requested_program_type
+            request.session['pending_selected_access'] = gym_access
+            messages.warning(request, 'Your selected path needs Elite. Choose upgrade or continue without trainer.')
+            return redirect('elite_upgrade_prompt')
         messages.success(request, 'Onboarding complete. Your plan is ready!')
         if profile.program_type in {'personal_trainer', 'hybrid'} and not profile.assigned_trainer:
             return redirect('initial_trainer_selection')
@@ -758,6 +796,9 @@ def _render_dashboard(request, profile, dashboard_variant, trainer_recommendatio
 
 
 def initial_trainer_selection(request):
+    pending_redirect = _redirect_if_pending_elite_upgrade(request)
+    if pending_redirect:
+        return pending_redirect
     profile = _require_profile(request)
     if not profile:
         return redirect('dashboard')
@@ -781,6 +822,9 @@ def initial_trainer_selection(request):
 
 
 def timetable_planner(request):
+    pending_redirect = _redirect_if_pending_elite_upgrade(request)
+    if pending_redirect:
+        return pending_redirect
     profile = _require_profile(request)
     if not profile:
         return redirect('dashboard')
@@ -846,6 +890,9 @@ def timetable_planner(request):
 
 
 def meal_timetable_planner(request):
+    pending_redirect = _redirect_if_pending_elite_upgrade(request)
+    if pending_redirect:
+        return pending_redirect
     profile = _require_profile(request)
     if not profile:
         return redirect('dashboard')
@@ -907,6 +954,78 @@ def meal_timetable_planner(request):
         'plan_caps': _plan_capabilities(profile),
     }
     return render(request, 'meal_timetable_planner.html', context)
+
+
+def elite_upgrade_prompt(request):
+    if not request.user.is_authenticated:
+        messages.info(request, 'Please sign in to continue.')
+        return redirect('signin')
+
+    if not _has_pending_elite_upgrade(request):
+        return redirect('dashboard')
+
+    try:
+        profile = MemberProfile.objects.filter(user=request.user).first()
+    except DatabaseError:
+        profile = None
+    if not profile:
+        messages.info(request, 'Please complete onboarding first.')
+        return redirect('onboarding')
+
+    requested_program_type = request.session.get('pending_requested_program_type', 'personal_trainer')
+    if requested_program_type not in {'personal_trainer', 'hybrid'}:
+        requested_program_type = 'personal_trainer'
+
+    if request.method == 'POST':
+        action = (request.POST.get('action') or '').strip().lower()
+        if action == 'upgrade':
+            coaching_by_program = {
+                'personal_trainer': 'yes',
+                'hybrid': 'maybe',
+            }
+            try:
+                profile.gym_access = 'private'
+                profile.program_type = requested_program_type
+                profile.personal_coaching = coaching_by_program.get(requested_program_type, 'yes')
+                profile.save(update_fields=['gym_access', 'program_type', 'personal_coaching'])
+            except DatabaseError:
+                messages.error(request, 'Could not apply upgrade right now. Please try again.')
+                return redirect('elite_upgrade_prompt')
+
+            request.session.pop('pending_elite_upgrade', None)
+            request.session.pop('pending_requested_program_type', None)
+            request.session.pop('pending_selected_access', None)
+            messages.success(request, 'Upgraded to Elite. Personal trainer features are now unlocked.')
+            if profile.program_type in {'personal_trainer', 'hybrid'} and not profile.assigned_trainer:
+                return redirect('initial_trainer_selection')
+            return redirect('timetable_planner')
+
+        if action == 'continue_without':
+            try:
+                profile.program_type = 'individual'
+                profile.personal_coaching = 'no'
+                profile.assigned_trainer = ''
+                profile.assigned_trainer_time = ''
+                profile.save(update_fields=['program_type', 'personal_coaching', 'assigned_trainer', 'assigned_trainer_time'])
+            except DatabaseError:
+                messages.error(request, 'Could not update your selection right now. Please try again.')
+                return redirect('elite_upgrade_prompt')
+
+            request.session.pop('pending_elite_upgrade', None)
+            request.session.pop('pending_requested_program_type', None)
+            request.session.pop('pending_selected_access', None)
+            messages.info(request, 'Continuing without personal trainer on your current plan.')
+            return redirect('timetable_planner')
+
+        messages.error(request, 'Please choose an option to continue.')
+
+    context = {
+        'user_name': request.user.first_name or request.user.username,
+        'profile': profile,
+        'requested_program_type': requested_program_type,
+        'selected_access_label': _plan_capabilities(profile)['plan_label'],
+    }
+    return render(request, 'elite_upgrade_prompt.html', context)
 
 
 def _build_recommendations(primary_goal, training_type, workout_frequency, program_type):
